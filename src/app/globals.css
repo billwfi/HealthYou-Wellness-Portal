@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --ryp-blue: #1565c0;
+  --ryp-blue-dark: #0d47a1;
+  --ryp-red: #cc0000;
+  --ryp-navy: #1a237e;
 }
 
 @theme inline {
@@ -12,15 +16,13 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.ryp-blue { color: var(--ryp-blue); }
+.ryp-blue-bg { background-color: var(--ryp-blue); }
+.ryp-red-bg { background-color: var(--ryp-red); }
+.ryp-navy-bg { background-color: var(--ryp-navy); }
