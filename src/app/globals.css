@@ -1,28 +1,127 @@
 @import "tailwindcss";
 
+/*
+ * Reach Your Peak design tokens.
+ * Wellable-inspired: calm neutral canvas, deep navy ink, one primary (RYP blue)
+ * for actions, RYP red used sparingly as the accent (streaks, highlights, brand mark).
+ * Components use the semantic names below, never raw hex values.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --ryp-blue: #1565c0;
-  --ryp-blue-dark: #0d47a1;
-  --ryp-red: #cc0000;
-  --ryp-navy: #1a237e;
+  --canvas: #f4f6fb;
+  --surface: #ffffff;
+  --surface-muted: #eef2f9;
+  --border: #dde3ee;
+  --ink: #131b3a;
+  --ink-muted: #5a6380;
+  --ink-subtle: #8a92ab;
+
+  --primary: #1565c0;
+  --primary-hover: #0f529e;
+  --primary-soft: #e3eefb;
+  --on-primary: #ffffff;
+
+  --accent: #cc0000;
+  --accent-soft: #fde8e8;
+
+  --success: #13795b;
+  --success-soft: #e2f4ec;
+  --warning: #a15c00;
+  --warning-soft: #fdf1dc;
+
+  --path-body: #0e7c86;
+  --path-body-soft: #e0f3f4;
+  --path-life: #b0610a;
+  --path-life-soft: #fbeedd;
+  --path-mind: #5b48c2;
+  --path-mind-soft: #ece9fa;
+
+  --elev-card: 0 1px 2px rgb(19 27 58 / 4%), 0 8px 24px rgb(19 27 58 / 5%);
+  --elev-pop: 0 12px 32px rgb(19 27 58 / 12%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #0b1020;
+    --surface: #131a2e;
+    --surface-muted: #1a2340;
+    --border: #26304f;
+    --ink: #e8ecf6;
+    --ink-muted: #a3acc4;
+    --ink-subtle: #737d99;
+
+    --primary: #5c9df0;
+    --primary-hover: #7fb2f4;
+    --primary-soft: #182d4f;
+    --on-primary: #0b1020;
+
+    --accent: #ff6b6b;
+    --accent-soft: #3a1820;
+
+    --success: #4cc79a;
+    --success-soft: #14302a;
+    --warning: #f0b45c;
+    --warning-soft: #33280f;
+
+    --path-body: #4cc3cc;
+    --path-body-soft: #12313a;
+    --path-life: #f0a556;
+    --path-life-soft: #35260f;
+    --path-mind: #a497f2;
+    --path-mind-soft: #241f45;
+
+    --elev-card: 0 1px 2px rgb(0 0 0 / 30%);
+    --elev-pop: 0 12px 32px rgb(0 0 0 / 45%);
+  }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-path-body: var(--path-body);
+  --color-path-body-soft: var(--path-body-soft);
+  --color-path-life: var(--path-life);
+  --color-path-life-soft: var(--path-life-soft);
+  --color-path-mind: var(--path-mind);
+  --color-path-mind-soft: var(--path-mind-soft);
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 1rem;
+  --shadow-card: var(--elev-card);
+  --shadow-pop: var(--elev-pop);
+}
+
+html {
+  color-scheme: light dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-.ryp-blue { color: var(--ryp-blue); }
-.ryp-blue-bg { background-color: var(--ryp-blue); }
-.ryp-red-bg { background-color: var(--ryp-red); }
-.ryp-navy-bg { background-color: var(--ryp-navy); }
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* The legacy reference UI was designed for light mode only. */
+.legacy {
+  color-scheme: light;
+}

@@ -1,22 +1,25 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Reach Your Peak — Colorado Springs",
-  description: "Colorado Springs employee wellness program",
+  title: { default: "Reach Your Peak", template: "%s · Reach Your Peak" },
+  description: "City of Colorado Springs employee wellness program",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f6fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1020" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col bg-white text-gray-900">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <footer className="bg-gray-100 border-t text-center text-xs text-gray-500 py-3 mt-8">
-          © 2026 City of Colorado Springs — Reach Your Peak Wellness Program
-        </footer>
-      </body>
+    <html lang="en" className={jakarta.variable}>
+      <body className="min-h-dvh font-sans">{children}</body>
     </html>
   );
 }
