@@ -7,6 +7,7 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { FormError } from "@/components/auth/field";
+import { control, FieldShell, invalidProps } from "@/components/admin/form-fields";
 import { CONTENT_TYPE_META } from "@/components/content/content-meta";
 import { CONTENT_TYPES, WELLNESS_PATHS, type ContentType, type WellnessPath } from "@/lib/domain";
 import { slugify } from "@/lib/slug";
@@ -31,27 +32,6 @@ export type ContentFormValues = {
 };
 
 type Tag = { id: number; label: string; path: WellnessPath };
-
-const control =
-  "block w-full rounded-xl border bg-surface px-3.5 text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 aria-[invalid=true]:border-accent";
-
-function FieldShell({ id, label, hint, error, children, optional }: { id: string; label: string; hint?: string; error?: string; optional?: boolean; children: ReactNode }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
-        {label} {optional && <span className="font-normal text-ink-subtle">(optional)</span>}
-      </label>
-      <div className="mt-1.5">{children}</div>
-      {error ? (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-accent">
-          {error}
-        </p>
-      ) : (
-        hint && <p id={`${id}-hint`} className="mt-1 text-xs text-ink-muted">{hint}</p>
-      )}
-    </div>
-  );
-}
 
 const CHOSEN: Record<WellnessPath, string> = {
   body: "peer-checked:border-path-body peer-checked:bg-path-body-soft peer-checked:text-path-body",
@@ -81,10 +61,7 @@ export function ContentForm({
   const [published, setPublished] = useState(initial.published);
   const fe = state.fieldErrors;
 
-  const err = (k: string) => ({
-    "aria-invalid": fe[k] ? true : undefined,
-    "aria-describedby": fe[k] ? `${k}-error` : undefined,
-  });
+  const err = (k: string) => invalidProps(k, fe[k]);
 
   return (
     <form

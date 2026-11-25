@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, Check, Flame, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Flame, Sparkles, Target, Trophy } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { getPointsSummary } from "@/server/points";
 import { getRecommendations } from "@/server/recommendations";
 import { getTodayHabits } from "@/server/habits";
 import { getMemberContext } from "@/server/member";
+import { getUpcomingEvents } from "@/server/events";
 import { toggleHabitToday } from "./actions";
 import { cn, currentPlanYear, PATHS } from "@/lib/utils";
-import { PROGRAM_TIME_ZONE } from "@/lib/dates";
+import { PROGRAM_TIME_ZONE, programToday } from "@/lib/dates";
 import { WELLNESS_PATHS } from "@/lib/domain";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { ContentCard } from "@/components/content/content-card";
 import { ActionButton } from "@/components/content/action-button";
+import { EventRow } from "@/components/events/event-row";
 
 function greeting(hour: number) {
   if (hour < 12) return "Good morning";
@@ -26,16 +28,18 @@ function greeting(hour: number) {
 export default async function TodayPage() {
   const user = await requireUser();
   const planYear = currentPlanYear();
-  const [{ total, nextTier }, picks, habits, member] = await Promise.all([
+  const [{ total, nextTier }, picks, habits, member, events] = await Promise.all([
     getPointsSummary(user.id, planYear),
     getRecommendations(user.id, { limit: 4 }),
     getTodayHabits(user.id),
     getMemberContext(user.id),
+    getUpcomingEvents({ limit: 3 }),
   ]);
   const now = new Date();
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: PROGRAM_TIME_ZONE }).format(now));
   const firstName = user.firstName || user.name.split(" ")[0];
   const habitsDone = habits.filter((h) => h.doneToday).length;
+  const today = programToday(now);
 
   return (
     <div className="space-y-6">
@@ -170,8 +174,36 @@ export default async function TodayPage() {
           )}
         </section>
 
+        {/* Events */}
+        <Card className="lg:col-span-2">
+          <CardHeader
+            title="Upcoming events"
+            description="All times Mountain"
+            action={
+              events.length > 0 && (
+                <Link href="/events" className="text-sm font-semibold text-primary hover:underline">
+                  See all
+                </Link>
+              )
+            }
+          />
+          {events.length ? (
+            <ul className="space-y-5 p-5">
+              {events.map((e) => (
+                <li key={e.id}>
+                  <EventRow event={e} today={today} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState icon={CalendarDays} title="Nothing scheduled yet">
+              New webinars and workshops will show up here.
+            </EmptyState>
+          )}
+        </Card>
+
         {/* Challenges */}
-        <Card className="lg:col-span-3">
+        <Card>
           <CardHeader title="Your challenges" action={<Badge tone="primary">Coming soon</Badge>} />
           <EmptyState
             icon={Trophy}

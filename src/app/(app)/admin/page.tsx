@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BarChart3, FileText, Gift, Trophy, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, FileText, Gift, Trophy, Users, type LucideIcon } from "lucide-react";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/session";
+import { programToday } from "@/lib/dates";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,11 +47,12 @@ function Section({ href, icon: Icon, title, description, stat, soon }: {
 
 export default async function AdminPage() {
   await requireAdmin();
-  const [published, drafts, members, onboarded] = await Promise.all([
+  const [published, drafts, members, onboarded, upcomingEvents] = await Promise.all([
     db.contentItem.count({ where: { publishedAt: { not: null } } }),
     db.contentItem.count({ where: { publishedAt: null } }),
     db.user.count(),
     db.memberProfile.count({ where: { onboardedAt: { not: null } } }),
+    db.event.count({ where: { eventDate: { gte: programToday() } } }),
   ]);
 
   return (
@@ -63,6 +65,13 @@ export default async function AdminPage() {
           title="Content"
           description="Articles, programs and resources, their topics and featured windows."
           stat={`${published} published · ${drafts} draft${drafts === 1 ? "" : "s"}`}
+        />
+        <Section
+          href="/admin/events"
+          icon={CalendarDays}
+          title="Events"
+          description="Webinars, workshops and classes on members' Today page."
+          stat={`${upcomingEvents} upcoming`}
         />
         <Section icon={Trophy} title="Challenges" description="Build challenges from templates, teams and milestones." soon="Phase 2" />
         <Section icon={Gift} title="Points & rewards" description="Earning rules, caps and reward tiers." soon="Phase 3" />
