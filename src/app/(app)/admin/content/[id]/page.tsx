@@ -11,7 +11,7 @@ import { DeleteContentButton } from "../delete-button";
 import { saveContent } from "../actions";
 import { dayInput, getEditorTags } from "../editor-data";
 
-export const metadata: Metadata = { title: "Edit content" };
+export const metadata: Metadata = { title: "Admin: Edit content" };
 
 export default async function EditContentPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();

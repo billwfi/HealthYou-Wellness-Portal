@@ -24,6 +24,7 @@ export function SignInForm({ next }: { next: string }) {
     if (error) {
       setError(error.message ?? "We couldn't sign you in. Check your email and password.");
       setPending(false);
+      document.getElementById("email")?.focus();
       return;
     }
     router.replace(next);
@@ -33,8 +34,8 @@ export function SignInForm({ next }: { next: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <FormError message={error} />
-      <Field label="Email" id="email" type="email" autoComplete="email" required />
-      <Field label="Password" id="password" type="password" autoComplete="current-password" required />
+      <Field label="Email" id="email" type="email" autoComplete="email" required aria-invalid={error ? true : undefined} />
+      <Field label="Password" id="password" type="password" autoComplete="current-password" required aria-invalid={error ? true : undefined} />
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>

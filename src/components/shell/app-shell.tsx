@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
 import { BottomNav, SidebarNav } from "./nav-links";
 import { SignOutButton } from "./sign-out-button";
+import { SkipLink } from "./skip-link";
 
 type ShellUser = { name: string; firstName?: string | null; lastName?: string | null; email: string; role?: string | null };
 
@@ -24,9 +25,10 @@ function Avatar({ user }: { user: ShellUser }) {
 export function AppShell({ user, children }: { user: ShellUser; children: ReactNode }) {
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[256px_1fr]">
+      <SkipLink />
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
-        <Link href="/" className="px-2">
+        <Link href="/" className="px-2" aria-label="Reach Your Peak home">
           <Logo size="lg" />
         </Link>
         <div className="mt-8 flex-1">
@@ -54,7 +56,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
-        <Link href="/">
+        <Link href="/" aria-label="Reach Your Peak home">
           <Logo size="sm" />
         </Link>
         <Link href="/profile" aria-label="Your profile">
@@ -62,7 +64,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
         </Link>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">{children}</main>
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl focus:outline-none px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">{children}</main>
       <BottomNav />
     </div>
   );

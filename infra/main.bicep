@@ -39,6 +39,16 @@ param dbTrustServerCertificate string = 'true'
 @description('Better Auth signing secret (stored in Key Vault).')
 param betterAuthSecret string
 
+@description('Web Push public key (VAPID); empty disables notifications.')
+param vapidPublicKey string = ''
+
+@secure()
+@description('Web Push private key (VAPID), stored in Key Vault.')
+param vapidPrivateKey string = ''
+
+@description('When the evening reminders run (cron, UTC). 01:00 UTC is 6 pm MST / 7 pm MDT.')
+param reminderCron string = '0 1 * * *'
+
 @description('Always-on replicas (1 avoids cold starts; 0 scales to zero).')
 @minValue(0)
 param minReplicas int = 1
@@ -126,6 +136,14 @@ resource authSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   properties: { value: betterAuthSecret }
 }
 
+var pushEnabled = !empty(vapidPublicKey) && !empty(vapidPrivateKey)
+
+resource vapidSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (pushEnabled) {
+  parent: kv
+  name: 'vapid-private-key'
+  properties: { value: vapidPrivateKey }
+}
+
 // ── Network: fixed outbound IP via NAT gateway ─────────────────────────────────
 // All outbound traffic from the apps leaves through one static public IP, so the
 // SQL Server firewall can allow exactly that address.
@@ -197,10 +215,19 @@ resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
 
 var appUrl = 'https://${appName}.${env.properties.defaultDomain}'
 
-var secrets = [
+var secrets = concat([
   { name: 'db-password', keyVaultUrl: dbPasswordSecret.properties.secretUri, identity: identity.id }
   { name: 'better-auth-secret', keyVaultUrl: authSecret.properties.secretUri, identity: identity.id }
-]
+], pushEnabled ? [
+  { name: 'vapid-private-key', keyVaultUrl: vapidSecret!.properties.secretUri, identity: identity.id }
+] : [])
+
+// Web Push settings, shared by the web app and the reminder job.
+var pushEnv = pushEnabled ? [
+  { name: 'VAPID_PUBLIC_KEY', value: vapidPublicKey }
+  { name: 'VAPID_PRIVATE_KEY', secretRef: 'vapid-private-key' }
+  { name: 'VAPID_SUBJECT', value: appUrl }
+] : []
 
 var dbEnv = [
   { name: 'DB_SERVER', value: dbServer }
@@ -243,7 +270,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = if (deployApp) {
           name: 'web'
           image: '${acr.properties.loginServer}/${webImage}'
           resources: { cpu: json('0.5'), memory: '1Gi' }
-          env: concat(dbEnv, [
+          env: concat(dbEnv, pushEnv, [
             { name: 'BETTER_AUTH_SECRET', secretRef: 'better-auth-secret' }
             { name: 'BETTER_AUTH_URL', value: appUrl }
           ])
@@ -304,7 +331,44 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = if (deployApp) {
           name: 'tools'
           image: '${acr.properties.loginServer}/${toolsImage}'
           resources: { cpu: json('0.5'), memory: '1Gi' }
-          env: dbEnv
+          env: concat(dbEnv, pushEnv)
+        }
+      ]
+    }
+  }
+}
+
+// Evening habit and challenge reminders (scripts/send-reminders.ts).
+resource reminderJob 'Microsoft.App/jobs@2024-03-01' = if (deployApp && pushEnabled) {
+  name: 'job-${appName}-reminders'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${identity.id}': {} }
+  }
+  dependsOn: [acrPull, kvSecretsUser]
+  properties: {
+    environmentId: env.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 900
+      replicaRetryLimit: 1
+      scheduleTriggerConfig: { cronExpression: reminderCron, parallelism: 1, replicaCompletionCount: 1 }
+      registries: [
+        { server: acr.properties.loginServer, identity: identity.id }
+      ]
+      secrets: secrets
+    }
+    template: {
+      containers: [
+        {
+          name: 'reminders'
+          image: '${acr.properties.loginServer}/${toolsImage}'
+          command: ['npx', 'tsx', 'scripts/send-reminders.ts']
+          resources: { cpu: json('0.5'), memory: '1Gi' }
+          env: concat(dbEnv, pushEnv)
         }
       ]
     }

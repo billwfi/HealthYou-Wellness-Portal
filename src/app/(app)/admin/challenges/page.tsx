@@ -13,8 +13,9 @@ import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/content/action-button";
 import { finalizeChallengeAction } from "./actions";
+import { Notice } from "@/components/ui/notice";
 
-export const metadata: Metadata = { title: "Challenges" };
+export const metadata: Metadata = { title: "Admin: Challenges" };
 
 const PHASE_BADGE: Record<ChallengePhase, { label: string; tone: "neutral" | "primary" | "success" | "warning" }> = {
   draft: { label: "Draft", tone: "neutral" },
@@ -65,9 +66,9 @@ export default async function AdminChallengesPage({ searchParams }: { searchPara
         }
       />
       {notice && (
-        <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
+        <Notice className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
           <CheckCircle2 className="size-4" aria-hidden /> {notice}
-        </p>
+        </Notice>
       )}
 
       <Card className="overflow-hidden">

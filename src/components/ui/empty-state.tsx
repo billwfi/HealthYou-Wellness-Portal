@@ -20,7 +20,8 @@ export function EmptyState({
       <span className="grid size-12 place-items-center rounded-full bg-primary-soft text-primary">
         <Icon className="size-6" aria-hidden />
       </span>
-      <h3 className="mt-4 font-bold text-ink">{title}</h3>
+      {/* Not a heading: empty states sit at varying depths and would break the outline. */}
+      <p className="mt-4 font-bold text-ink">{title}</p>
       {children && <p className="mt-1 max-w-sm text-sm text-ink-muted">{children}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>

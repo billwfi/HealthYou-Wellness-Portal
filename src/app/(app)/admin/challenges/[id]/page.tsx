@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ChallengeForm } from "../challenge-form";
 import { saveChallenge } from "../actions";
 
-export const metadata: Metadata = { title: "Edit challenge" };
+export const metadata: Metadata = { title: "Admin: Edit challenge" };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const str = (d: { toString(): string } | null) => (d == null ? "" : d.toString());
@@ -35,7 +35,7 @@ export default async function EditChallengePage({ params }: { params: Promise<{ 
         title={c.name}
         action={
           <Link href={`/challenges/${c.slug}`} target="_blank" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            View as member <ExternalLink className="size-3.5" aria-hidden />
+            View as member<span className="sr-only"> (opens in a new tab)</span> <ExternalLink className="size-3.5" aria-hidden />
           </Link>
         }
       />

@@ -13,8 +13,9 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { contentTypeMeta } from "@/components/content/content-meta";
+import { Notice } from "@/components/ui/notice";
 
-export const metadata: Metadata = { title: "Content" };
+export const metadata: Metadata = { title: "Admin: Content" };
 
 const STATUSES = ["all", "published", "draft", "featured"] as const;
 type Status = (typeof STATUSES)[number];
@@ -107,17 +108,17 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
       />
 
       {(savedItem || sp.deleted) && (
-        <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
+        <Notice className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
           <CheckCircle2 className="size-4" aria-hidden />
           {savedItem ? `Saved “${savedItem.title}”.` : "Item deleted."}
-        </p>
+        </Notice>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
         <nav aria-label="Status" className="flex flex-wrap gap-2">
           {STATUSES.map((s) => (
             <Link key={s} href={href({ status: s })} className={chip(status === s)} aria-current={status === s ? "page" : undefined}>
-              {s[0].toUpperCase() + s.slice(1)} <span className="opacity-70">{countFor[s]}</span>
+              {s[0].toUpperCase() + s.slice(1)} <span className="font-normal">{countFor[s]}</span>
             </Link>
           ))}
         </nav>
@@ -139,7 +140,7 @@ export default async function AdminContentPage({ searchParams }: { searchParams:
             type="search"
             placeholder="Search title or provider"
             aria-label="Search content"
-            className="h-9 w-full rounded-full border border-border bg-surface pl-9 pr-3 text-sm focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+            className="h-9 w-full rounded-full border border-input-border bg-surface pl-9 pr-3 text-sm focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary"
           />
         </form>
       </div>

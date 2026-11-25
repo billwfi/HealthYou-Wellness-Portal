@@ -11,6 +11,7 @@ import { EVENT_TYPES, type EventType } from "@/lib/domain";
 import { EVENT_TYPE_META } from "@/lib/events";
 import { cn } from "@/lib/utils";
 import { deleteEvent, type EventFormState } from "./actions";
+import { useFocusFirstInvalid } from "@/components/admin/use-focus-invalid";
 
 export type EventFormValues = {
   title: string;
@@ -38,10 +39,12 @@ export function EventForm({
   const [state, formAction, pending] = useActionState(action, { error: null, fieldErrors: {} });
   const [deleting, startDelete] = useTransition();
   const fe = state.fieldErrors;
+  const formRef = useFocusFirstInvalid(state);
   const input = (id: keyof EventFormValues) => ({ id, name: id, defaultValue: initial[id], ...invalidProps(id, fe[id]) });
 
   return (
     <form
+      ref={formRef}
       // Submit by hand so a failed save keeps what the admin typed (React resets forms after `action`).
       onSubmit={(e) => {
         e.preventDefault();

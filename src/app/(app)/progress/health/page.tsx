@@ -107,6 +107,7 @@ export default async function HealthPage() {
                   </div>
                   <ActionButton className={buttonClasses({ variant: "secondary", size: "sm" })} pendingLabel="Saving…">
                     {goal ? "Update" : "Set target"}
+                    <span className="sr-only"> for {m.label}</span>
                   </ActionButton>
                   {goal && (
                     <button
@@ -114,7 +115,7 @@ export default async function HealthPage() {
                       formNoValidate
                       className="h-8 rounded-full px-3 text-sm font-semibold text-ink-muted hover:bg-surface-muted hover:text-ink"
                     >
-                      Clear
+                      Clear<span className="sr-only"> {m.label} target</span>
                     </button>
                   )}
                 </form>

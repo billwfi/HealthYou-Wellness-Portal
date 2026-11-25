@@ -105,7 +105,7 @@ export default async function ProgressPage() {
           {entries.length ? (
             <div className="divide-y divide-border">
               {[...byDay].map(([time, list]) => (
-                <section key={time} className="px-5 py-4" aria-label={dayLabel(new Date(time))}>
+                <div key={time} className="px-5 py-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">{dayLabel(new Date(time))}</h3>
                   <ul className="mt-2 space-y-1">
                     {list.map((e) => {
@@ -136,7 +136,7 @@ export default async function ProgressPage() {
                       );
                     })}
                   </ul>
-                </section>
+                </div>
               ))}
             </div>
           ) : (

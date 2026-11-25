@@ -14,6 +14,7 @@ import { SectionTitle } from "@/components/ui/section-title";
 import { buttonClasses } from "@/components/ui/button";
 import { ActionButton } from "@/components/content/action-button";
 import { requestReward } from "./actions";
+import { Notice } from "@/components/ui/notice";
 
 export const metadata: Metadata = { title: "Rewards" };
 
@@ -59,9 +60,9 @@ export default async function RewardsPage({ searchParams }: { searchParams: Prom
         description="You earn points for taking part, never for your health results."
       />
       {n && (
-        <p role="status" className={cn("mb-4 rounded-xl px-4 py-2.5 text-sm font-medium", n.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}>
+        <Notice className={cn("mb-4 rounded-xl px-4 py-2.5 text-sm font-medium", n.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}>
           {n.text}
-        </p>
+        </Notice>
       )}
 
       {/* Tiers */}

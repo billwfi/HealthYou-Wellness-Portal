@@ -1,6 +1,7 @@
 import { columnPath, niceTicks, tickLabel } from "./chart-utils";
 
-type Datum = { key: string; label: string; value: number; tooltip: string };
+/** `display` replaces the number in the table (e.g. for a hidden small group). */
+type Datum = { key: string; label: string; value: number; tooltip: string; display?: string };
 
 const W = 640;
 const H = 200;
@@ -11,7 +12,7 @@ const PAD = { top: 22, right: 8, bottom: 26, left: 44 };
  * card title names the series. Hover a column for its tooltip; a table view
  * below carries every value.
  */
-export function ColumnChart({ data, title, unit }: { data: Datum[]; title: string; unit: string }) {
+export function ColumnChart({ data, title, unit, periodLabel = "Week of" }: { data: Datum[]; title: string; unit: string; periodLabel?: string }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const ticks = niceTicks(0, max, 4);
   const top = ticks[ticks.length - 1];
@@ -59,7 +60,7 @@ export function ColumnChart({ data, title, unit }: { data: Datum[]; title: strin
         <table className="mt-2 w-full text-left">
           <thead>
             <tr>
-              <th scope="col" className="py-1 font-semibold">Week of</th>
+              <th scope="col" className="py-1 font-semibold">{periodLabel}</th>
               <th scope="col" className="py-1 text-right font-semibold">{unit}</th>
             </tr>
           </thead>
@@ -67,7 +68,7 @@ export function ColumnChart({ data, title, unit }: { data: Datum[]; title: strin
             {data.map((d) => (
               <tr key={d.key} className="border-t border-border">
                 <td className="py-1">{d.label}</td>
-                <td className="py-1 text-right tabular-nums">{d.value.toLocaleString()}</td>
+                <td className="py-1 text-right tabular-nums">{d.display ?? d.value.toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

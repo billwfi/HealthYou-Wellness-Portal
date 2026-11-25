@@ -12,7 +12,7 @@ import { ActionButton } from "@/components/content/action-button";
 import { ImportForm } from "./import-form";
 import { rejectScreening, verifyScreening } from "./actions";
 
-export const metadata: Metadata = { title: "Screenings" };
+export const metadata: Metadata = { title: "Admin: Screenings" };
 
 const fmtDay = (d: Date) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(d);
 

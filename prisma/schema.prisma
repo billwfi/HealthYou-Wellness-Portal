@@ -45,6 +45,7 @@ model User {
   deviceConnections   DeviceConnection[]
   biometricScreenings BiometricScreening[]
   biometricGoals      BiometricGoal[]
+  pushSubscriptions   PushSubscription[]
   captainOf           Team[]
   teamMemberships     TeamMember[]
   enrollments         ChallengeEnrollment[]
@@ -114,6 +115,10 @@ model MemberProfile {
   memberType String    @default("employee") @map("member_type") @db.NVarChar(20)
   timezone   String    @default("America/Denver") @db.NVarChar(64)
   onboardedAt DateTime? @map("onboarded_at")
+  /// Push: habit nudges and challenge start/end reminders
+  notifyReminders Boolean @default(true) @map("notify_reminders")
+  /// Push: program announcements from admins
+  notifyNews      Boolean @default(true) @map("notify_news")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
 
@@ -671,4 +676,45 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@map("audit_log")
+}
+
+// ── Push notifications ───────────────────────────────────────────────────────
+
+/** One browser or installed app that accepted notifications. */
+model PushSubscription {
+  id            Int       @id @default(autoincrement())
+  userId        String    @map("user_id") @db.NVarChar(64)
+  /// SHA-256 of the endpoint (endpoints are too long for a SQL Server unique index).
+  endpointHash  String    @unique @map("endpoint_hash") @db.NVarChar(64)
+  endpoint      String    @db.NVarChar(2000)
+  p256dh        String    @db.NVarChar(200)
+  auth          String    @db.NVarChar(100)
+  userAgent     String?   @map("user_agent") @db.NVarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastSuccessAt DateTime? @map("last_success_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+/** Announcements and reminder runs, for the admin history. */
+model PushMessage {
+  id         Int      @id @default(autoincrement())
+  /// news | reminder
+  kind       String   @db.NVarChar(20)
+  title      String   @db.NVarChar(100)
+  body       String   @db.NVarChar(300)
+  url        String?  @db.NVarChar(500)
+  /// JSON: who it was for, e.g. { department: "Fire" }
+  audience   String?  @db.NVarChar(Max)
+  /// Admin user id; null for the scheduled reminder job.
+  sentBy     String?  @map("sent_by") @db.NVarChar(64)
+  recipients Int      @default(0)
+  delivered  Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("push_messages")
 }

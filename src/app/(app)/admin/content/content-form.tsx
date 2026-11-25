@@ -13,6 +13,7 @@ import { CONTENT_TYPES, WELLNESS_PATHS, type ContentType, type WellnessPath } fr
 import { slugify } from "@/lib/slug";
 import { cn, PATHS } from "@/lib/utils";
 import type { ContentFormState } from "./actions";
+import { useFocusFirstInvalid } from "@/components/admin/use-focus-invalid";
 
 export type ContentFormValues = {
   title: string;
@@ -60,11 +61,13 @@ export function ContentForm({
   const [tagIds, setTagIds] = useState(() => new Set(initial.tagIds));
   const [published, setPublished] = useState(initial.published);
   const fe = state.fieldErrors;
+  const formRef = useFocusFirstInvalid(state);
 
   const err = (k: string) => invalidProps(k, fe[k]);
 
   return (
     <form
+      ref={formRef}
       // Submit by hand: React resets a form after its `action` runs, which would wipe
       // the admin's input whenever validation fails.
       onSubmit={(e) => {
@@ -145,7 +148,7 @@ export function ContentForm({
                           />
                           <span
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15",
+                              "inline-flex items-center gap-1 rounded-full border border-input-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
                               CHOSEN[p],
                             )}
                           >
@@ -183,7 +186,7 @@ export function ContentForm({
                     onChange={() => setPublished(s === "published")}
                     className="peer sr-only"
                   />
-                  <span className="block rounded-xl border border-border px-3 py-2 text-center text-sm font-semibold text-ink-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+                  <span className="block rounded-xl border border-input-border px-3 py-2 text-center text-sm font-semibold text-ink-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
                     {s === "draft" ? "Draft" : "Published"}
                   </span>
                 </label>
@@ -203,7 +206,7 @@ export function ContentForm({
           </div>
           {!isNew && initial.published && (
             <Link href={`/explore/${initial.slug}`} target="_blank" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-              View as member <ExternalLink className="size-3.5" aria-hidden />
+              View as member<span className="sr-only"> (opens in a new tab)</span> <ExternalLink className="size-3.5" aria-hidden />
             </Link>
           )}
         </Card>

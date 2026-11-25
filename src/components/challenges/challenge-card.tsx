@@ -41,7 +41,7 @@ export function ChallengeCard({ item, today }: { item: ChallengeListItem; today:
     <Link href={`/challenges/${c.slug}`} className="group block h-full">
       <Card className="flex h-full flex-col overflow-hidden transition-shadow group-hover:shadow-pop">
         <div className="relative h-28 shrink-0 overflow-hidden">
-          <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+          <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100" />
           <div className="absolute inset-0 bg-linear-to-t from-peak-navy/60 to-transparent" aria-hidden />
         </div>
         <div className="peak-stripe h-1 shrink-0" aria-hidden />

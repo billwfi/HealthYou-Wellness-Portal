@@ -9,10 +9,15 @@ export function Field({ label, id, hint, ...props }: ComponentProps<"input"> & {
       <input
         id={id}
         name={id}
-        className="mt-1.5 block h-11 w-full rounded-xl border border-border bg-surface px-3.5 text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+        className="mt-1.5 block h-11 w-full rounded-xl border border-input-border bg-surface px-3.5 text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary aria-[invalid=true]:border-accent"
+        aria-describedby={hint ? `${id}-hint` : undefined}
         {...props}
       />
-      {hint && <p className="mt-1 text-xs text-ink-muted">{hint}</p>}
+      {hint && (
+        <p id={`${id}-hint`} className="mt-1 text-xs text-ink-muted">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

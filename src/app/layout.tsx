@@ -7,6 +7,9 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakart
 export const metadata: Metadata = {
   title: { default: "Reach Your Peak", template: "%s · Reach Your Peak" },
   description: "City of Colorado Springs employee wellness program",
+  applicationName: "Reach Your Peak",
+  appleWebApp: { capable: true, title: "Reach Your Peak", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {

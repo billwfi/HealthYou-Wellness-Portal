@@ -48,16 +48,16 @@ export function TodayView({ data }: { data: TodayData }) {
       {/* Hero */}
       <section aria-labelledby="greeting" className="relative isolate overflow-hidden rounded-3xl shadow-pop">
         <Image src={HERO_PHOTO} alt="" fill priority placeholder="blur" sizes="(min-width: 1024px) 1100px, 100vw" className="-z-10 object-cover object-[center_40%]" />
-        <div className="absolute inset-0 -z-10 bg-linear-to-r from-peak-navy/95 via-peak-navy/70 to-peak-navy/10" aria-hidden />
+        <div className="absolute inset-0 -z-10 bg-linear-to-r from-peak-navy/95 via-peak-navy/75 to-peak-navy/30 lg:to-peak-navy/60" aria-hidden />
         <div className="grid grid-cols-1 gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-10">
           <div className="min-w-0 max-w-xl text-white">
-            <p className="text-sm font-semibold text-white/80">
+            <p className="text-sm font-semibold text-white/90">
               {new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: PROGRAM_TIME_ZONE }).format(now)}
             </p>
             <h1 id="greeting" className="mt-2 text-2xl font-extrabold tracking-tight sm:text-4xl">
               {greeting(hour)}, {firstName}
             </h1>
-            <p className="mt-2 text-base text-white/85 sm:text-lg">Every step counts on the climb. Here&apos;s what&apos;s waiting for you today.</p>
+            <p className="mt-2 text-base text-white/90 sm:text-lg">Every step counts on the climb. Here&apos;s what&apos;s waiting for you today.</p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link href="/progress#log" className={cn(buttonClasses({ size: "lg" }), "bg-white text-peak-navy shadow-md hover:bg-white/90")}>
                 <Plus className="size-5" aria-hidden /> Log activity
@@ -69,10 +69,10 @@ export function TodayView({ data }: { data: TodayData }) {
           </div>
           <dl className="grid min-w-0 grid-cols-3 gap-2 sm:gap-3 lg:w-[420px]">
             {heroStats.map((s) => (
-              <div key={s.label} className="min-w-0 rounded-2xl border border-white/20 bg-white/15 p-2.5 text-white backdrop-blur-md sm:p-4">
-                <dt className="truncate text-[11px] font-semibold text-white/75 sm:text-xs">{s.label}</dt>
+              <div key={s.label} className="min-w-0 rounded-2xl border border-white/20 bg-peak-navy/70 p-2.5 text-white backdrop-blur-md sm:p-4">
+                <dt className="wrap-break-word text-[11px] font-semibold text-white/90 sm:text-xs">{s.label}</dt>
                 <dd className="mt-1 text-xl font-extrabold tabular-nums sm:text-2xl">{s.value}</dd>
-                <dd className="mt-0.5 text-[10px] leading-tight text-white/75 sm:text-[11px]">{s.sub}</dd>
+                <dd className="mt-0.5 text-[10px] leading-tight text-white/90 sm:text-[11px]">{s.sub}</dd>
               </div>
             ))}
           </dl>
@@ -117,7 +117,7 @@ export function TodayView({ data }: { data: TodayData }) {
                       )}
                     >
                       <span
-                        className={cn("grid size-7 shrink-0 place-items-center rounded-full border-2", h.doneToday ? "border-success bg-success text-white" : "border-border")}
+                        className={cn("grid size-7 shrink-0 place-items-center rounded-full border-2", h.doneToday ? "border-success bg-success text-white" : "border-input-border")}
                         aria-hidden
                       >
                         {h.doneToday && <Check className="size-4" />}
@@ -126,7 +126,7 @@ export function TodayView({ data }: { data: TodayData }) {
                         <span className={cn("block text-sm font-semibold", h.doneToday ? "text-ink-muted" : "text-ink")}>{h.title}</span>
                         <span className="mt-0.5 flex items-center gap-2 text-xs text-ink-muted">
                           {h.streak > 0 ? (
-                            <span className="inline-flex items-center gap-0.5 font-semibold text-peak-orange">
+                            <span className="inline-flex items-center gap-0.5 font-semibold text-warning">
                               <Flame className="size-3.5" aria-hidden /> {h.streak}-day streak
                             </span>
                           ) : (
@@ -164,7 +164,7 @@ export function TodayView({ data }: { data: TodayData }) {
                 {nextTier ? (
                   <>
                     <p className="text-lg font-extrabold">{(nextTier.threshold - total).toLocaleString()} to go</p>
-                    <p className="text-white/80">
+                    <p className="text-white/90">
                       until <span className="font-semibold text-white">{nextTier.label}</span>: {nextTier.reward}
                     </p>
                   </>
@@ -190,7 +190,7 @@ export function TodayView({ data }: { data: TodayData }) {
           description="Picked from your interests and goals"
           action={
             <Link href="/explore" className={linkClass}>
-              See all
+              See all<span className="sr-only"> content</span>
             </Link>
           }
         />
@@ -265,7 +265,7 @@ export function TodayView({ data }: { data: TodayData }) {
             action={
               events.length > 0 && (
                 <Link href="/events" className={linkClass}>
-                  See all
+                  See all<span className="sr-only"> events</span>
                 </Link>
               )
             }

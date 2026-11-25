@@ -11,8 +11,9 @@ import { buttonClasses } from "@/components/ui/button";
 import { control } from "@/components/admin/form-fields";
 import { ActionButton } from "@/components/content/action-button";
 import { adjustPoints, deleteTier, saveRule, saveTier, setRedemptionStatus } from "./actions";
+import { Notice } from "@/components/ui/notice";
 
-export const metadata: Metadata = { title: "Points & rewards" };
+export const metadata: Metadata = { title: "Admin: Points & rewards" };
 
 const NOTICES: Record<string, { text: string; ok: boolean }> = {
   fulfilled: { text: "Marked as fulfilled.", ok: true },
@@ -66,9 +67,9 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
       </Link>
       <PageHeader eyebrow="Admin" title={`Points & rewards ${planYear}`} description="Fulfill reward requests, set tiers and earning rules, and adjust a member's points." />
       {n && (
-        <p role="status" className={cn("mb-4 rounded-xl px-4 py-2.5 text-sm font-medium", n.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}>
+        <Notice className={cn("mb-4 rounded-xl px-4 py-2.5 text-sm font-medium", n.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}>
           {n.text}
-        </p>
+        </Notice>
       )}
 
       {/* Requests */}
@@ -92,10 +93,10 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
                   </label>
                   <input id={`note-${r.id}`} name="note" placeholder="Note (optional)" maxLength={500} className={cn(input, "w-48")} />
                   <ActionButton formAction={setRedemptionStatus.bind(null, r.id, "fulfilled")} className={buttonClasses({ size: "sm" })} pendingLabel="…">
-                    <Check className="size-4" aria-hidden /> Fulfilled
+                    <Check className="size-4" aria-hidden /> Fulfilled<span className="sr-only">: {r.user.name}, {r.tier?.label}</span>
                   </ActionButton>
                   <ActionButton formAction={setRedemptionStatus.bind(null, r.id, "cancelled")} className={buttonClasses({ size: "sm", variant: "ghost" })} pendingLabel="…">
-                    <X className="size-4" aria-hidden /> Cancel
+                    <X className="size-4" aria-hidden /> Cancel<span className="sr-only"> request from {r.user.name}</span>
                   </ActionButton>
                 </form>
               </li>
@@ -124,15 +125,15 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
         {/* Tiers */}
         <Card id="tiers" className="scroll-mt-24">
           <CardHeader title="Reward tiers" description="Members unlock a tier when their yearly points reach its threshold" />
-          <CardBody className="space-y-3">
+          <CardBody className="space-y-3 overflow-x-auto">
             {tiers.map((t) => (
-              <form key={t.id} action={saveTier.bind(null, t.id)} className="grid grid-cols-[1fr_1.4fr_90px_auto] items-center gap-2">
-                <input name="label" defaultValue={t.label} aria-label="Tier name" required maxLength={100} className={input} />
-                <input name="reward" defaultValue={t.reward} aria-label="Reward" required maxLength={300} className={input} />
-                <input name="threshold" defaultValue={t.threshold} aria-label="Points needed" type="number" min={1} required className={input} />
+              <form key={t.id} action={saveTier.bind(null, t.id)} className="grid min-w-lg grid-cols-[1fr_1.4fr_90px_auto] items-center gap-2">
+                <input name="label" defaultValue={t.label} aria-label={`${t.label}: tier name`} required maxLength={100} className={input} />
+                <input name="reward" defaultValue={t.reward} aria-label={`${t.label}: reward`} required maxLength={300} className={input} />
+                <input name="threshold" defaultValue={t.threshold} aria-label={`${t.label}: points needed`} type="number" min={1} required className={input} />
                 <span className="flex gap-1">
                   <ActionButton className={buttonClasses({ size: "sm", variant: "secondary" })} pendingLabel="…">
-                    Save
+                    Save<span className="sr-only"> {t.label}</span>
                   </ActionButton>
                   {t._count.redemptions === 0 && (
                     <ActionButton
@@ -147,7 +148,7 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
                 </span>
               </form>
             ))}
-            <form action={saveTier.bind(null, null)} className="grid grid-cols-[1fr_1.4fr_90px_auto] items-center gap-2 border-t border-border pt-3">
+            <form action={saveTier.bind(null, null)} className="grid min-w-lg grid-cols-[1fr_1.4fr_90px_auto] items-center gap-2 border-t border-border pt-3">
               <input name="label" placeholder="New tier" aria-label="New tier name" required maxLength={100} className={input} />
               <input name="reward" placeholder="Reward" aria-label="New tier reward" required maxLength={300} className={input} />
               <input name="threshold" placeholder="Points" aria-label="Points needed for the new tier" type="number" min={1} required className={input} />
@@ -161,8 +162,8 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
         {/* Rules */}
         <Card id="rules" className="scroll-mt-24">
           <CardHeader title="Earning rules" description="Points per action with daily and yearly limits. Changes apply from now on." />
-          <CardBody>
-            <div className="mb-1 grid grid-cols-[1fr_64px_64px_64px_auto_auto] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
+          <CardBody className="overflow-x-auto">
+            <div className="mb-1 grid min-w-md grid-cols-[1fr_64px_64px_64px_auto_auto] gap-2 text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
               <span>Rule</span>
               <span>Points</span>
               <span>Per day</span>
@@ -172,7 +173,7 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
             </div>
             <div className="space-y-2">
               {rules.map((r) => (
-                <form key={r.id} action={saveRule.bind(null, r.id)} className="grid grid-cols-[1fr_64px_64px_64px_auto_auto] items-center gap-2">
+                <form key={r.id} action={saveRule.bind(null, r.id)} className="grid min-w-md grid-cols-[1fr_64px_64px_64px_auto_auto] items-center gap-2">
                   <span className="truncate text-sm font-medium text-ink" title={r.label}>
                     {r.label}
                   </span>
@@ -181,7 +182,7 @@ export default async function AdminRewardsPage({ searchParams }: { searchParams:
                   <input name="maxPerYear" defaultValue={r.maxPerYear ?? ""} type="number" min={0} placeholder="–" aria-label={`${r.label}: yearly limit`} className={input} />
                   <input name="isActive" type="checkbox" defaultChecked={r.isActive} aria-label={`${r.label}: active`} className="size-4 accent-primary" />
                   <ActionButton className={buttonClasses({ size: "sm", variant: "secondary" })} pendingLabel="…">
-                    Save
+                    Save<span className="sr-only"> {r.label}</span>
                   </ActionButton>
                 </form>
               ))}

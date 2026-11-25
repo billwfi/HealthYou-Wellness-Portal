@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/session";
 import { programToday } from "@/lib/dates";
 import { currentPlanYear } from "@/lib/utils";
 import { audit } from "@/server/audit";
+import { notify } from "@/server/push";
 
 function done(notice: string, anchor = ""): never {
   revalidatePath("/", "layout");
@@ -33,6 +34,9 @@ export async function setRedemptionStatus(id: number, status: "fulfilled" | "can
     data: { status, fulfilledAt: status === "fulfilled" ? new Date() : null, details: JSON.stringify(details) },
   });
   await audit(admin.id, `redemption.${status}`, "reward_redemption", r.id, { userId: r.userId, note: note || undefined });
+  if (status === "fulfilled") {
+    await notify([r.userId], { title: "Your reward is on its way", body: note || "Your reward request has been fulfilled.", url: "/rewards", tag: "reward" }, "account");
+  }
   done(status, "#requests");
 }
 

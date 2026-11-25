@@ -10,8 +10,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Notice } from "@/components/ui/notice";
 
-export const metadata: Metadata = { title: "Events" };
+export const metadata: Metadata = { title: "Admin: Events" };
 
 type Search = Promise<{ when?: string; saved?: string; deleted?: string }>;
 
@@ -56,18 +57,18 @@ export default async function AdminEventsPage({ searchParams }: { searchParams: 
       />
 
       {(savedEvent || sp.deleted) && (
-        <p role="status" className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
+        <Notice className="mb-4 flex items-center gap-2 rounded-xl bg-success-soft px-4 py-2.5 text-sm font-medium text-success">
           <CheckCircle2 className="size-4" aria-hidden />
           {savedEvent ? `Saved “${savedEvent.title}”.` : "Event deleted."}
-        </p>
+        </Notice>
       )}
 
       <nav aria-label="When" className="flex gap-2">
         <Link href="/admin/events" className={tab(!past)} aria-current={!past ? "page" : undefined}>
-          Upcoming <span className="opacity-70">{upcomingCount}</span>
+          Upcoming <span className="font-normal">{upcomingCount}</span>
         </Link>
         <Link href="/admin/events?when=past" className={tab(past)} aria-current={past ? "page" : undefined}>
-          Past <span className="opacity-70">{pastCount}</span>
+          Past <span className="font-normal">{pastCount}</span>
         </Link>
       </nav>
 

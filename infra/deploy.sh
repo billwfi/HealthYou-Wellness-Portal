@@ -6,8 +6,9 @@
 #   infra/deploy.sh seed       # run the reference-data seed as a job
 #   infra/deploy.sh admin [you@example.com] # grant admin role (no email = the only account)
 #   infra/deploy.sh egress     # print the outbound IP the jobs/apps use
+#   infra/deploy.sh reminders  # send tonight's reminders now (normally a nightly scheduled job)
 #
-# Reads DB_* and PROD_BETTER_AUTH_SECRET from .env.local (never committed).
+# Reads DB_*, PROD_BETTER_AUTH_SECRET and PROD_VAPID_* from .env.local (never committed).
 # Override defaults with env vars: SUBSCRIPTION, RG, LOCATION, APP_NAME.
 set -euo pipefail
 export PYTHONIOENCODING=utf-8 PYTHONUTF8=1   # az CLI on Windows crashes printing build logs otherwise
@@ -82,9 +83,10 @@ case "${1:-deploy}" in
   migrate) run_job "npx prisma migrate deploy"; exit ;;
   seed)    run_job "npx tsx scripts/seed.ts"; exit ;;
   admin)   run_job "npx tsx scripts/make-admin.ts '${2:-}'"; exit ;;
+  reminders) run_job "npx tsx scripts/send-reminders.ts --force"; exit ;;
   egress)  run_job "node -e \"fetch('https://api.ipify.org').then(r=>r.text()).then(ip=>console.log('egress ip: '+ip))\""; exit ;;
   deploy)  ;;
-  *) echo "usage: $0 [deploy|migrate|seed|admin <email>|egress]"; exit 2 ;;
+  *) echo "usage: $0 [deploy|migrate|seed|admin <email>|reminders|egress]"; exit 2 ;;
 esac
 
 params=(
@@ -92,6 +94,7 @@ params=(
   dbServer="$DB_SERVER" dbPort="${DB_PORT:-1433}" dbName="${DB_NAME:-WellnessPortal}" dbUser="$DB_USER"
   dbPassword="$DB_PASSWORD" dbTrustServerCertificate="${DB_TRUST_SERVER_CERTIFICATE:-false}"
   betterAuthSecret="$PROD_BETTER_AUTH_SECRET"
+  vapidPublicKey="${PROD_VAPID_PUBLIC_KEY:-}" vapidPrivateKey="${PROD_VAPID_PRIVATE_KEY:-}"
 )
 
 echo "▶ Resource group $RG ($LOCATION)"

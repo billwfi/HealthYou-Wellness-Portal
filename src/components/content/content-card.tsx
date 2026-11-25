@@ -38,7 +38,7 @@ export function ContentCard({
   return (
     <Card className="flex h-full flex-col overflow-hidden">
       <Link href={`/explore/${item.slug}`} tabIndex={-1} aria-hidden className="relative block h-32 shrink-0 overflow-hidden">
-        <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1280px) 280px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 hover:scale-105" style={{ objectPosition: photo.position ?? "center" }} />
+        <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1280px) 280px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 hover:scale-105 motion-reduce:transition-none motion-reduce:hover:scale-100" style={{ objectPosition: photo.position ?? "center" }} />
       </Link>
       <div className={`h-1 shrink-0 ${EDGE[item.path] ?? "bg-primary"}`} aria-hidden />
       <div className="flex flex-1 flex-col p-5">

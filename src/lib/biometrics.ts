@@ -13,21 +13,23 @@ export type Marker = {
   reference?: string;
   /** Which way is usually healthier, used to suggest a target direction. */
   better: "lower" | "higher" | "range";
+  /** The reference range as numbers, for de-identified group reports. */
+  inRange?: { lo?: number; hi?: number };
 };
 
 export const MARKERS: Marker[] = [
-  { key: "bp_systolic", label: "Blood pressure (systolic)", unit: "mmHg", min: 60, max: 260, decimals: 0, reference: "Below 120", better: "lower" },
-  { key: "bp_diastolic", label: "Blood pressure (diastolic)", unit: "mmHg", min: 30, max: 160, decimals: 0, reference: "Below 80", better: "lower" },
-  { key: "total_cholesterol", label: "Total cholesterol", unit: "mg/dL", min: 50, max: 500, decimals: 0, reference: "Below 200", better: "lower" },
-  { key: "hdl", label: "HDL cholesterol", unit: "mg/dL", min: 5, max: 150, decimals: 0, reference: "60 or higher", better: "higher" },
-  { key: "ldl", label: "LDL cholesterol", unit: "mg/dL", min: 10, max: 400, decimals: 0, reference: "Below 100", better: "lower" },
-  { key: "triglycerides", label: "Triglycerides", unit: "mg/dL", min: 10, max: 2000, decimals: 0, reference: "Below 150", better: "lower" },
-  { key: "glucose", label: "Fasting glucose", unit: "mg/dL", min: 30, max: 600, decimals: 0, reference: "70 to 99", better: "range" },
-  { key: "a1c", label: "A1C", unit: "%", min: 3, max: 20, decimals: 1, reference: "Below 5.7", better: "lower" },
+  { key: "bp_systolic", label: "Blood pressure (systolic)", unit: "mmHg", min: 60, max: 260, decimals: 0, reference: "Below 120", better: "lower", inRange: { hi: 119.99 } },
+  { key: "bp_diastolic", label: "Blood pressure (diastolic)", unit: "mmHg", min: 30, max: 160, decimals: 0, reference: "Below 80", better: "lower", inRange: { hi: 79.99 } },
+  { key: "total_cholesterol", label: "Total cholesterol", unit: "mg/dL", min: 50, max: 500, decimals: 0, reference: "Below 200", better: "lower", inRange: { hi: 199.99 } },
+  { key: "hdl", label: "HDL cholesterol", unit: "mg/dL", min: 5, max: 150, decimals: 0, reference: "60 or higher", better: "higher", inRange: { lo: 60 } },
+  { key: "ldl", label: "LDL cholesterol", unit: "mg/dL", min: 10, max: 400, decimals: 0, reference: "Below 100", better: "lower", inRange: { hi: 99.99 } },
+  { key: "triglycerides", label: "Triglycerides", unit: "mg/dL", min: 10, max: 2000, decimals: 0, reference: "Below 150", better: "lower", inRange: { hi: 149.99 } },
+  { key: "glucose", label: "Fasting glucose", unit: "mg/dL", min: 30, max: 600, decimals: 0, reference: "70 to 99", better: "range", inRange: { lo: 70, hi: 99.99 } },
+  { key: "a1c", label: "A1C", unit: "%", min: 3, max: 20, decimals: 1, reference: "Below 5.7", better: "lower", inRange: { hi: 5.69 } },
   { key: "weight_lb", label: "Weight", unit: "lb", min: 60, max: 700, decimals: 1, better: "range" },
-  { key: "bmi", label: "BMI", unit: "", min: 10, max: 80, decimals: 1, reference: "18.5 to 24.9", better: "range" },
+  { key: "bmi", label: "BMI", unit: "", min: 10, max: 80, decimals: 1, reference: "18.5 to 24.9", better: "range", inRange: { lo: 18.5, hi: 24.99 } },
   { key: "waist_in", label: "Waist", unit: "in", min: 15, max: 80, decimals: 1, better: "lower" },
-  { key: "resting_hr", label: "Resting heart rate", unit: "bpm", min: 25, max: 220, decimals: 0, reference: "60 to 100", better: "lower" },
+  { key: "resting_hr", label: "Resting heart rate", unit: "bpm", min: 25, max: 220, decimals: 0, reference: "60 to 100", better: "lower", inRange: { lo: 60, hi: 100 } },
 ];
 
 export const MARKER_BY_KEY = new Map(MARKERS.map((m) => [m.key, m]));
@@ -55,6 +57,13 @@ export function checkMarker(key: string, value: number): string | null {
   if (!Number.isFinite(value)) return `${m.label} must be a number.`;
   if (value < m.min || value > m.max) return `${m.label} should be between ${m.min} and ${m.max}${m.unit ? ` ${m.unit}` : ""}.`;
   return null;
+}
+
+/** Is a value within the marker's general reference range? Null when the marker has none. */
+export function inReferenceRange(key: string, value: number): boolean | null {
+  const r = MARKER_BY_KEY.get(key)?.inRange;
+  if (!r) return null;
+  return (r.lo == null || value >= r.lo) && (r.hi == null || value <= r.hi);
 }
 
 /** Is the latest value on the goal side of a member's target? */

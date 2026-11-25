@@ -35,12 +35,12 @@ export function PageBanner({
         className="-z-10 object-cover"
         style={{ objectPosition: photo.position ?? "center" }}
       />
-      <div className="absolute inset-0 -z-10 bg-linear-to-r from-peak-navy/95 via-peak-navy/70 to-peak-navy/20" aria-hidden />
+      <div className="absolute inset-0 -z-10 bg-linear-to-r from-peak-navy/95 via-peak-navy/85 to-peak-navy/60" aria-hidden />
       <div className="flex min-h-40 flex-wrap items-end justify-between gap-4 p-5 text-white sm:min-h-48 sm:p-8">
         <div className="min-w-0 max-w-2xl">
-          {eyebrow && <p className="text-xs font-bold uppercase tracking-wider text-white/80">{eyebrow}</p>}
+          {eyebrow && <p className="text-xs font-bold uppercase tracking-wider text-white/90">{eyebrow}</p>}
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-          {description && <div className="mt-1.5 text-white/85">{description}</div>}
+          {description && <div className="mt-1.5 text-white/90">{description}</div>}
           {children}
         </div>
         {action}

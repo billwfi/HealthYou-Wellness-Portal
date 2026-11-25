@@ -46,14 +46,14 @@ export function ImportForm() {
           <label htmlFor="source" className="block text-sm font-semibold text-ink">
             Source
           </label>
-          <select id="source" name="source" defaultValue="lab" className={cn(control, "mt-1.5 h-10")}>
+          <select id="source" name="source" defaultValue="lab" aria-describedby="source-hint" className={cn(control, "mt-1.5 h-10")}>
             {(["onsite", "lab", "physician_form"] as const).map((s) => (
               <option key={s} value={s}>
                 {SOURCE_LABELS[s]}
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-ink-muted">Used when a row has no source column.</p>
+          <p id="source-hint" className="mt-1 text-xs text-ink-muted">Used when a row has no source column.</p>
         </div>
       </div>
       <div>
@@ -73,8 +73,11 @@ export function ImportForm() {
       </details>
 
       <FormError message={tooBig ? "That file is over 900 KB. Split it into smaller files." : state.error} />
+      <p role="status" className="sr-only">
+        {state.done ? `Import finished: ${state.created} new, ${state.updated} updated, ${state.problems.length} skipped.` : ""}
+      </p>
       {state.done && (
-        <div role="status" className="space-y-2 rounded-xl bg-surface-muted p-4 text-sm">
+        <div className="space-y-2 rounded-xl bg-surface-muted p-4 text-sm">
           <p className="flex items-center gap-2 font-semibold text-success">
             <CheckCircle2 className="size-4" aria-hidden />
             {state.created} new, {state.updated} updated · {state.pointsAwarded.toLocaleString()} points awarded
@@ -84,7 +87,7 @@ export function ImportForm() {
               <p className="flex items-center gap-2 font-semibold text-warning">
                 <AlertTriangle className="size-4" aria-hidden /> {state.problems.length} row{state.problems.length === 1 ? "" : "s"} skipped
               </p>
-              <ul className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-xs text-ink-muted">
+              <ul tabIndex={0} role="region" aria-label="Skipped rows" className="mt-1 max-h-48 space-y-0.5 overflow-y-auto text-xs text-ink-muted">
                 {state.problems.map((p, i) => (
                   <li key={i}>
                     Line {p.line}: {p.message}

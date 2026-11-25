@@ -12,7 +12,7 @@ export function ProgressBar({ value, label, className, tone = "primary" }: { val
       aria-valuenow={pct}
       className={cn("h-2 overflow-hidden rounded-full bg-surface-muted", className)}
     >
-      <div className={cn("h-full rounded-full transition-[width] duration-700", tone === "success" ? "bg-success" : "bg-primary")} style={{ width: `${pct}%` }} />
+      <div className={cn("h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none", tone === "success" ? "bg-success" : "bg-primary")} style={{ width: `${pct}%` }} />
     </div>
   );
 }

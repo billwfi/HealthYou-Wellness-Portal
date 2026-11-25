@@ -48,7 +48,7 @@ export default async function ContentPage({ params }: { params: Params }) {
       </Link>
 
       <div className="relative mt-4 h-48 overflow-hidden rounded-3xl shadow-card sm:h-64">
-        <Image src={photo.src} alt={photo.alt} fill priority placeholder="blur" sizes="(min-width: 768px) 768px, 100vw" className="object-cover" style={{ objectPosition: photo.position ?? "center" }} />
+        <Image src={photo.src} alt="" fill priority placeholder="blur" sizes="(min-width: 768px) 768px, 100vw" className="object-cover" style={{ objectPosition: photo.position ?? "center" }} />
         <div className="peak-stripe absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
       </div>
 
@@ -72,7 +72,7 @@ export default async function ContentPage({ params }: { params: Params }) {
       <div className="mt-6 flex flex-wrap items-center gap-3">
         {item.url && /^https?:\/\//i.test(item.url) && (
           <a href={item.url} target="_blank" rel="noopener noreferrer" className={buttonClasses({ variant: "secondary" })}>
-            Open <ExternalLink className="size-4" aria-hidden />
+            Open<span className="sr-only"> {item.title} (opens in a new tab)</span> <ExternalLink className="size-4" aria-hidden />
           </a>
         )}
         <form action={toggleSaveContent.bind(null, item.id)}>
@@ -96,7 +96,16 @@ export default async function ContentPage({ params }: { params: Params }) {
 
       {item.body && (
         <Card className="mt-8 p-6">
-          <div className="space-y-4 whitespace-pre-line leading-relaxed text-ink">{item.body}</div>
+          <div className="space-y-4 leading-relaxed text-ink">
+            {item.body
+              .split(/\n\s*\n/)
+              .filter((p) => p.trim())
+              .map((p, i) => (
+                <p key={i} className="whitespace-pre-line">
+                  {p.trim()}
+                </p>
+              ))}
+          </div>
         </Card>
       )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ const CHOSEN: Record<WellnessPath, string> = {
 };
 
 const inputClass =
-  "block h-11 w-full rounded-xl border border-border bg-surface px-3.5 text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15";
+  "block h-11 w-full rounded-xl border border-input-border bg-surface px-3.5 text-ink placeholder:text-ink-subtle focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary";
 
 export function OnboardingForm({
   firstName,
@@ -53,6 +53,18 @@ export function OnboardingForm({
   const [habitIds, setHabitIds] = useState(() => new Set(initial.habitIds));
 
   const last = STEPS.length - 1;
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const firstRender = useRef(true);
+
+  // A step change replaces the content: move focus to the new heading so keyboard
+  // and screen reader users land at the top of the step and hear its title.
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    headingRef.current?.focus();
+  }, [step]);
 
   function next() {
     if (step === 1 && tagIds.size === 0) {
@@ -61,7 +73,6 @@ export function OnboardingForm({
     }
     setStepError(null);
     setStep((s) => Math.min(last, s + 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function toggle<T>(set: Set<T>, value: T) {
@@ -91,7 +102,10 @@ export function OnboardingForm({
         <p className="text-xs font-bold uppercase tracking-wider text-primary">
           {editing ? "Update your profile" : `Welcome, ${firstName}`}
         </p>
-        <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">
+        <h1 ref={headingRef} tabIndex={-1} className="mt-1 scroll-mt-24 text-2xl font-extrabold tracking-tight focus:outline-none sm:text-3xl">
+          <span className="sr-only">
+            Step {step + 1} of {STEPS.length}:{" "}
+          </span>
           {step === 0 && "Let's make Reach Your Peak yours"}
           {step === 1 && "What would you like to focus on?"}
           {step === 2 && "Set a goal for each path"}
@@ -110,7 +124,7 @@ export function OnboardingForm({
         {STEPS.map((label, i) => (
           <li key={label} aria-current={i === step ? "step" : undefined}>
             <span className={cn("block h-1.5 rounded-full", i <= step ? "bg-primary" : "bg-surface-muted")} />
-            <span className={cn("mt-2 block text-xs font-semibold", i === step ? "text-ink" : "text-ink-subtle")}>{label}</span>
+            <span className={cn("mt-2 block text-xs font-semibold", i === step ? "text-ink" : "text-ink-muted")}>{label}</span>
           </li>
         ))}
       </ol>
@@ -130,7 +144,7 @@ export function OnboardingForm({
                   onChange={() => setMemberType(t)}
                   className="peer sr-only"
                 />
-                <span className="block h-full rounded-card border border-border bg-surface p-4 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+                <span className="block h-full rounded-card border border-input-border bg-surface p-4 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
                   <span className="block font-bold text-ink">{MEMBER_TYPE_LABELS[t].label}</span>
                   <span className="mt-0.5 block text-sm text-ink-muted">{MEMBER_TYPE_LABELS[t].hint}</span>
                 </span>
@@ -140,7 +154,7 @@ export function OnboardingForm({
         </fieldset>
         <div>
           <label htmlFor="department" className="block text-sm font-semibold text-ink">
-            Department <span className="font-normal text-ink-subtle">(optional)</span>
+            Department <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="department"
@@ -148,9 +162,10 @@ export function OnboardingForm({
             defaultValue={initial.department}
             maxLength={200}
             placeholder="e.g. Parks, Recreation & Cultural Services"
+            aria-describedby="department-hint"
             className={cn(inputClass, "mt-1.5")}
           />
-          <p className="mt-1 text-xs text-ink-muted">Used for department teams in challenges.</p>
+          <p id="department-hint" className="mt-1 text-xs text-ink-muted">Used for department teams in challenges.</p>
         </div>
       </section>
 
@@ -177,7 +192,7 @@ export function OnboardingForm({
                     />
                     <span
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-muted peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15",
+                        "inline-flex items-center gap-1.5 rounded-full border border-input-border bg-surface px-3.5 py-2 text-sm font-semibold text-ink-muted transition-colors hover:bg-surface-muted peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
                         CHOSEN[path],
                       )}
                     >
@@ -251,11 +266,11 @@ export function OnboardingForm({
                 onChange={() => setHabitIds((s) => toggle(s, h.id))}
                 className="peer sr-only"
               />
-              <span className="flex items-center gap-4 rounded-card border border-border bg-surface p-4 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+              <span className="flex items-center gap-4 rounded-card border border-input-border bg-surface p-4 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
                 <span
                   className={cn(
                     "grid size-6 shrink-0 place-items-center rounded-md border",
-                    chosen ? "border-primary bg-primary text-on-primary" : "border-border",
+                    chosen ? "border-primary bg-primary text-on-primary" : "border-input-border",
                   )}
                   aria-hidden
                 >
@@ -286,7 +301,7 @@ export function OnboardingForm({
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
         {step > 0 ? (
-          <Button type="button" variant="ghost" onClick={() => setStep((s) => s - 1)}>
+          <Button type="button" variant="ghost" onClick={() => { setStepError(null); setStep((s) => s - 1); }}>
             <ArrowLeft className="size-4" aria-hidden /> Back
           </Button>
         ) : (

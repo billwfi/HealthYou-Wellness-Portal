@@ -1,6 +1,6 @@
 # HealthYou Redesign Plan
 
-**Status:** Phases 0–3 deployed, 2026-11-25 · **Branch:** `redesign/modern-platform`
+**Status:** Phases 0–4 deployed, 2026-11-25 (device sync waits on a vendor choice) · **Branch:** `redesign/modern-platform`
 **Research:** [docs/research/2026-11-market-scan.md](research/2026-11-market-scan.md)
 
 ## Decisions (2026-11-24)
@@ -155,6 +155,13 @@ Built (2026-11-25): screening CSV import for admins (onsite/lab/physician form; 
 - Device aggregator integration.
 - PWA install support and push notifications.
 - Accessibility audit.
+
+Built (2026-11-25):
+- **Reports** (Admin → Reports): participation by month, department and member type; challenge participation and goal completion; share of screened members in the reference range, including the same members year over year; tiers reached. Every figure covers at least 10 members (smaller groups are pooled, then hidden). One CSV per table; exports are audited.
+- **Installable app:** web app manifest, app icons, and a service worker with an offline page. No member data is cached.
+- **Push notifications:** members turn them on per device under Profile → App & notifications and choose reminders and/or program news. Admins send announcements to everyone, a department, or a challenge's participants. A nightly job (6 pm MST) sends each member at most one reminder: a challenge ending or starting tomorrow, or habits not checked today. Reward-fulfilled and screening-verified messages always go out. The VAPID private key lives in Key Vault.
+- **Accessibility (WCAG 2.2 AA):** skip links and landmarks; visible focus on custom controls and in forced-colors mode; contrast fixes for subtle text, input borders and path colors; stronger photo scrims; focus moves to the new step in onboarding and to the first invalid field after a failed save; hints and errors linked to their fields; redirect notices announced; reduced-motion support; clearer link and button names.
+- **Not yet:** device aggregator integration, which needs the City to choose a vendor (Terra, Validic, Rook or similar).
 
 ## Open questions for the City / program owner
 

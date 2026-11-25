@@ -78,8 +78,12 @@ export function LogActivityForm({ types, today, earliest }: { types: ActivityTyp
         <input id="notes" name="notes" maxLength={500} className={cn(control, "h-11")} />
       </FieldShell>
       <FormError message={state.error} />
+      {/* Always mounted, so screen readers announce the text when it changes. */}
+      <p role="status" className="sr-only">
+        {state.ok ?? ""}
+      </p>
       {state.ok && (
-        <p role="status" className="flex items-center gap-2 rounded-xl bg-success-soft px-3.5 py-2.5 text-sm font-medium text-success">
+        <p className="flex items-center gap-2 rounded-xl bg-success-soft px-3.5 py-2.5 text-sm font-medium text-success">
           <CheckCircle2 className="size-4 shrink-0" aria-hidden /> {state.ok}
         </p>
       )}

@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EventForm } from "../event-form";
 import { saveEvent } from "../actions";
 
-export const metadata: Metadata = { title: "Edit event" };
+export const metadata: Metadata = { title: "Admin: Edit event" };
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();

@@ -11,6 +11,8 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { SignOutButton } from "@/components/shell/sign-out-button";
+import { NotificationSettings } from "@/components/pwa/notification-settings";
+import { vapidPublicKey } from "@/server/push";
 
 export const metadata: Metadata = { title: "Profile" };
 
@@ -20,9 +22,9 @@ const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
   retiree: "Retiree",
 };
 
-const editLink = (
+const editLink = (what: string) => (
   <ButtonLink href="/welcome" variant="secondary" size="sm">
-    Edit
+    Edit<span className="sr-only"> {what}</span>
   </ButtonLink>
 );
 
@@ -40,11 +42,11 @@ export default async function ProfilePage() {
         eyebrow="Profile"
         title={user.name}
         description={[user.email, memberType && MEMBER_TYPE_LABELS[memberType], member.profile?.department].filter(Boolean).join(" · ")}
-        action={<SignOutButton className="bg-white/15 text-white backdrop-blur hover:bg-white/25 hover:text-white" />}
+        action={<SignOutButton className="bg-peak-navy/80 text-white hover:bg-peak-navy hover:text-white" />}
       />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader title="Interests" description="Used to personalize your Today feed" action={editLink} />
+          <CardHeader title="Interests" description="Used to personalize your Today feed" action={editLink("interests")} />
           <CardBody className="space-y-4">
             {WELLNESS_PATHS.map((path) => {
               const tags = member.interests.filter((t) => t.path === path);
@@ -70,7 +72,7 @@ export default async function ProfilePage() {
 
         <div className="space-y-6">
           <Card>
-            <CardHeader title="Goals" action={editLink} />
+            <CardHeader title="Goals" action={editLink("goals")} />
             <CardBody>
               <ul className="space-y-3">
                 {WELLNESS_PATHS.map((path) => (
@@ -92,7 +94,7 @@ export default async function ProfilePage() {
           </Card>
 
           <Card>
-            <CardHeader title="Daily habits" action={editLink} />
+            <CardHeader title="Daily habits" action={editLink("habits")} />
             <CardBody>
               {habits.length ? (
                 <ul className="space-y-2">
@@ -106,6 +108,13 @@ export default async function ProfilePage() {
               ) : (
                 <p className="text-sm text-ink-subtle">No habits chosen</p>
               )}
+            </CardBody>
+          </Card>
+
+          <Card id="notifications" className="scroll-mt-24">
+            <CardHeader title="App & notifications" />
+            <CardBody>
+              <NotificationSettings publicKey={vapidPublicKey()} reminders={member.profile?.notifyReminders ?? true} news={member.profile?.notifyNews ?? true} />
             </CardBody>
           </Card>
 

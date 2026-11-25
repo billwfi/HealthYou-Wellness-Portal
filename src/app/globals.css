@@ -13,7 +13,8 @@
   --border: #dde3ee;
   --ink: #131b3a;
   --ink-muted: #5a6380;
-  --ink-subtle: #8a92ab;
+  --ink-subtle: #646c86; /* ≥4.5:1 on canvas, surface and surface-muted */
+  --input-border: #7d869f; /* ≥3:1 for form-control boundaries */
 
   --primary: #1565c0;
   --primary-hover: #0f529e;
@@ -28,9 +29,9 @@
   --warning: #a15c00;
   --warning-soft: #fdf1dc;
 
-  --path-body: #0e7c86;
+  --path-body: #0b6b74;
   --path-body-soft: #e0f3f4;
-  --path-life: #b0610a;
+  --path-life: #975208;
   --path-life-soft: #fbeedd;
   --path-mind: #5b48c2;
   --path-mind-soft: #ece9fa;
@@ -48,7 +49,8 @@
     --border: #26304f;
     --ink: #e8ecf6;
     --ink-muted: #a3acc4;
-    --ink-subtle: #737d99;
+    --ink-subtle: #9099b4;
+    --input-border: #646e8f;
 
     --primary: #5c9df0;
     --primary-hover: #7fb2f4;
@@ -84,6 +86,7 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-ink-subtle: var(--ink-subtle);
+  --color-input-border: var(--input-border);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
@@ -117,6 +120,15 @@
 
 html {
   color-scheme: light dark;
+  /* Keep focused elements clear of the sticky header and the mobile bottom nav. */
+  scroll-padding-top: 4.5rem;
+  scroll-padding-bottom: 6rem;
+}
+
+@media (min-width: 64rem) {
+  html {
+    scroll-padding-bottom: 0;
+  }
 }
 
 body {

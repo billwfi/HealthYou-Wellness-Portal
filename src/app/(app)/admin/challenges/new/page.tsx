@@ -13,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { ChallengeForm } from "../challenge-form";
 import { saveChallenge } from "../actions";
 
-export const metadata: Metadata = { title: "New challenge" };
+export const metadata: Metadata = { title: "Admin: New challenge" };
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -46,7 +46,8 @@ export default async function NewChallengePage({ searchParams }: { searchParams:
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/admin/challenges/new"
-                className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold", !t ? "border-primary bg-primary-soft text-primary" : "border-border text-ink-muted hover:bg-surface-muted")}
+                aria-current={!t ? "page" : undefined}
+                className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold", !t ? "border-primary bg-primary-soft text-primary ring-1 ring-primary" : "border-border text-ink-muted hover:bg-surface-muted")}
               >
                 Blank
               </Link>
@@ -55,10 +56,11 @@ export default async function NewChallengePage({ searchParams }: { searchParams:
                   key={x.id}
                   href={`/admin/challenges/new?template=${x.slug}`}
                   title={x.description ?? undefined}
-                  className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold", t?.id === x.id ? "border-primary bg-primary-soft text-primary" : "border-border text-ink-muted hover:bg-surface-muted")}
+                  aria-current={t?.id === x.id ? "page" : undefined}
+                  className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold", t?.id === x.id ? "border-primary bg-primary-soft text-primary ring-1 ring-primary" : "border-border text-ink-muted hover:bg-surface-muted")}
                 >
                   {x.name}
-                  <span className="ml-1 font-normal opacity-70">· {CHALLENGE_TYPE_META[x.type as ChallengeType]?.label ?? x.type}</span>
+                  <span className="ml-1 font-normal">· {CHALLENGE_TYPE_META[x.type as ChallengeType]?.label ?? x.type}</span>
                 </Link>
               ))}
             </div>

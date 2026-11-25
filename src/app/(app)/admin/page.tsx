@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BarChart3, CalendarDays, FileText, Gift, HeartPulse, Trophy, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, Bell, CalendarDays, FileText, Gift, HeartPulse, Trophy, Users, type LucideIcon } from "lucide-react";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/session";
 import { programToday } from "@/lib/dates";
@@ -19,7 +19,7 @@ function Section({ href, icon: Icon, title, description, stat, soon }: {
   soon?: string;
 }) {
   const body = (
-    <Card className={`flex h-full flex-col p-5 ${href ? "transition-shadow group-hover:shadow-pop" : "opacity-70"}`}>
+    <Card className={`flex h-full flex-col p-5 ${href ? "transition-shadow group-hover:shadow-pop" : "border-dashed"}`}>
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary">
           <Icon className="size-5" aria-hidden />
@@ -47,7 +47,7 @@ function Section({ href, icon: Icon, title, description, stat, soon }: {
 
 export default async function AdminPage() {
   await requireAdmin();
-  const [published, drafts, members, onboarded, upcomingEvents, liveChallenges, pendingRewards, pendingScreenings] = await Promise.all([
+  const [published, drafts, members, onboarded, upcomingEvents, liveChallenges, pendingRewards, pendingScreenings, pushMembers] = await Promise.all([
     db.contentItem.count({ where: { publishedAt: { not: null } } }),
     db.contentItem.count({ where: { publishedAt: null } }),
     db.user.count(),
@@ -56,6 +56,7 @@ export default async function AdminPage() {
     db.challenge.count({ where: { status: { in: ["scheduled", "active"] }, endDate: { gte: programToday() } } }),
     db.rewardRedemption.count({ where: { status: "pending" } }),
     db.biometricScreening.count({ where: { verifiedAt: null } }),
+    db.pushSubscription.findMany({ select: { userId: true }, distinct: ["userId"] }).then((r) => r.length),
   ]);
 
   return (
@@ -97,8 +98,15 @@ export default async function AdminPage() {
           description="Import biometric results and verify self-reported screenings."
           stat={`${pendingScreenings} awaiting review`}
         />
+        <Section
+          href="/admin/notifications"
+          icon={Bell}
+          title="Notifications"
+          description="Send announcements to phones and browsers; see the daily reminder runs."
+          stat={`${pushMembers} member${pushMembers === 1 ? "" : "s"} with notifications on`}
+        />
         <Section icon={Users} title="Members" description="Roles, member types and departments." soon="Later" />
-        <Section icon={BarChart3} title="Reports" description="De-identified participation reports for the City." soon="Phase 4" />
+        <Section href="/admin/reports" icon={BarChart3} title="Reports" description="De-identified participation, challenge and health reports for the City, with CSV downloads." />
       </div>
     </>
   );

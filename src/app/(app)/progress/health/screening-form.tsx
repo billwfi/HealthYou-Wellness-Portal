@@ -60,8 +60,12 @@ export function ScreeningForm({ today, earliest }: { today: string; earliest: st
         </div>
       </fieldset>
       <FormError message={state.error} />
+      {/* Always mounted, so screen readers announce the text when it changes. */}
+      <p role="status" className="sr-only">
+        {state.ok ?? ""}
+      </p>
       {state.ok && (
-        <p role="status" className="flex items-center gap-2 rounded-xl bg-success-soft px-3.5 py-2.5 text-sm font-medium text-success">
+        <p className="flex items-center gap-2 rounded-xl bg-success-soft px-3.5 py-2.5 text-sm font-medium text-success">
           <CheckCircle2 className="size-4 shrink-0" aria-hidden /> {state.ok}
         </p>
       )}

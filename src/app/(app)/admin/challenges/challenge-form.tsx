@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { startTransition, useActionState, useState, useTransition, type ReactNode } from "react";
+import { startTransition, useActionState, useRef, useState, useTransition, type ReactNode } from "react";
 import { Archive, Plus, Trash2, X } from "lucide-react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { CHALLENGE_TYPE_META, isDayScored, METRIC_META, TEAM_MODE_META } from "@
 import { slugify } from "@/lib/slug";
 import { cn } from "@/lib/utils";
 import { removeChallenge, type ChallengeFormState } from "./actions";
+import { useFocusFirstInvalid } from "@/components/admin/use-focus-invalid";
 
 export type ChallengeFormValues = {
   name: string;
@@ -38,7 +39,7 @@ function Radio<T extends string>({ name, value, checked, onChange, title, hint }
   return (
     <label className="cursor-pointer">
       <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} className="peer sr-only" />
-      <span className="block h-full rounded-xl border border-border p-3 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+      <span className="block h-full rounded-xl border border-input-border p-3 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
         <span className="block text-sm font-bold text-ink">{title}</span>
         <span className="mt-0.5 block text-xs text-ink-muted">{hint}</span>
       </span>
@@ -69,8 +70,10 @@ export function ChallengeForm({
   const [teamMode, setTeamMode] = useState(initial.teamMode);
   const [published, setPublished] = useState(initial.published);
   const [milestones, setMilestones] = useState(() => initial.milestones.map((m, i) => ({ ...m, key: i })));
+  const addMilestoneRef = useRef<HTMLButtonElement>(null);
   const [nextKey, setNextKey] = useState(initial.milestones.length);
   const fe = state.fieldErrors;
+  const formRef = useFocusFirstInvalid(state);
   const typeMeta = CHALLENGE_TYPE_META[type];
   const unit = METRIC_META[metric].unit;
   const field = (id: keyof ChallengeFormValues) => ({ id, name: id, defaultValue: initial[id] as string, ...invalidProps(id, fe[id]) });
@@ -78,6 +81,7 @@ export function ChallengeForm({
 
   return (
     <form
+      ref={formRef}
       // Manual submit keeps the admin's input when validation fails (React resets forms after `action`).
       onSubmit={(e) => {
         e.preventDefault();
@@ -189,7 +193,7 @@ export function ChallengeForm({
               {MEMBER_TYPES.map((t) => (
                 <label key={t} className="cursor-pointer">
                   <input type="checkbox" name="eligMemberType" value={t} defaultChecked={initial.eligMemberTypes.includes(t)} className="peer sr-only" />
-                  <span className="inline-flex rounded-full border border-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+                  <span className="inline-flex rounded-full border border-input-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
                     {{ employee: "Employees", spouse: "Spouses & partners", retiree: "Retirees" }[t]}
                   </span>
                 </label>
@@ -197,7 +201,7 @@ export function ChallengeForm({
             </div>
           </fieldset>
           <FieldShell id="eligDepartments" label="Departments" optional hint="One per line or comma-separated. Matched against the department members enter in their profile (case doesn't matter).">
-            <textarea id="eligDepartments" name="eligDepartments" defaultValue={initial.eligDepartments} rows={2} className={cn(control, "py-2.5")} />
+            <textarea id="eligDepartments" name="eligDepartments" defaultValue={initial.eligDepartments} rows={2} aria-describedby="eligDepartments-hint" className={cn(control, "py-2.5")} />
           </FieldShell>
         </Card>
 
@@ -211,13 +215,17 @@ export function ChallengeForm({
           {milestones.length > 0 && (
             <ul className="space-y-2">
               {milestones.map((m, i) => (
-                <li key={m.key} className="grid grid-cols-[1fr_110px_90px_auto] items-center gap-2">
-                  <input name="milestoneLabel" defaultValue={m.label} placeholder="e.g. Halfway there" aria-label={`Milestone ${i + 1} name`} maxLength={200} className={cn(control, "h-10")} />
-                  <input name="milestoneThreshold" defaultValue={m.threshold} type="number" min={0} step="any" inputMode="decimal" placeholder={scoreUnit} aria-label={`Milestone ${i + 1} amount in ${scoreUnit}`} className={cn(control, "h-10")} />
+                <li key={m.key} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 sm:grid-cols-[1fr_110px_90px_auto]">
+                  <input name="milestoneLabel" defaultValue={m.label} placeholder="e.g. Halfway there" aria-label={`Milestone ${i + 1} name`} maxLength={200} className={cn(control, "col-span-3 h-10 sm:col-span-1")} />
+                  <input name="milestoneThreshold" defaultValue={m.threshold} type="number" min={0} step="any" inputMode="decimal" placeholder={scoreUnit} aria-label={`Milestone ${i + 1} amount in ${scoreUnit}`} aria-invalid={fe.milestones ? true : undefined} aria-describedby={fe.milestones ? "milestones-error" : undefined} className={cn(control, "h-10")} />
                   <input name="milestonePoints" defaultValue={m.points} type="number" min={0} inputMode="numeric" placeholder="pts" aria-label={`Milestone ${i + 1} points`} className={cn(control, "h-10")} />
                   <button
                     type="button"
-                    onClick={() => setMilestones((ms) => ms.filter((x) => x.key !== m.key))}
+                    onClick={() => {
+                      setMilestones((ms) => ms.filter((x) => x.key !== m.key));
+                      // The row (and this button) disappears: keep focus in the section.
+                      requestAnimationFrame(() => addMilestoneRef.current?.focus());
+                    }}
                     className="grid size-9 place-items-center rounded-full text-ink-subtle hover:bg-surface-muted hover:text-accent"
                     aria-label={`Remove milestone ${i + 1}`}
                   >
@@ -227,9 +235,14 @@ export function ChallengeForm({
               ))}
             </ul>
           )}
-          {fe.milestones && <p className="text-xs font-medium text-accent">{fe.milestones}</p>}
+          {fe.milestones && (
+            <p id="milestones-error" className="text-xs font-medium text-accent">
+              {fe.milestones}
+            </p>
+          )}
           {milestones.length < 10 && (
             <button
+              ref={addMilestoneRef}
               type="button"
               onClick={() => {
                 setMilestones((ms) => [...ms, { label: "", threshold: "", points: "25", key: nextKey }]);
@@ -251,7 +264,7 @@ export function ChallengeForm({
               {(["draft", "published"] as const).map((s) => (
                 <label key={s} className="cursor-pointer">
                   <input type="radio" name="status" value={s} checked={published === (s === "published")} onChange={() => setPublished(s === "published")} className="peer sr-only" />
-                  <span className="block rounded-xl border border-border px-3 py-2 text-center text-sm font-semibold text-ink-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+                  <span className="block rounded-xl border border-input-border px-3 py-2 text-center text-sm font-semibold text-ink-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
                     {s === "draft" ? "Draft" : "Published"}
                   </span>
                 </label>

@@ -7,13 +7,13 @@ import { PATH_PHOTOS } from "./photos";
 
 // Static class names per path so Tailwind can see them.
 const TINT: Record<WellnessPath, string> = {
-  body: "from-[#073e44]/95 via-[#0e7c86]/55",
-  life: "from-[#5a3104]/95 via-[#b0610a]/50",
-  mind: "from-[#2a1f66]/95 via-[#5b48c2]/50",
+  body: "from-[#073e44]/95 via-[#073e44]/80",
+  life: "from-[#5a3104]/95 via-[#5a3104]/80",
+  mind: "from-[#2a1f66]/95 via-[#2a1f66]/80",
 };
 const CHIP: Record<WellnessPath, string> = {
-  body: "bg-[#0e7c86]",
-  life: "bg-[#b0610a]",
+  body: "bg-[#0b6b74]",
+  life: "bg-[#975208]",
   mind: "bg-[#5b48c2]",
 };
 
@@ -23,7 +23,7 @@ export function PathCard({ path, goal }: { path: WellnessPath; goal?: string }) 
   return (
     <Link
       href={`/explore?path=${path}`}
-      className="group relative isolate flex min-h-44 flex-col justify-end sm:min-h-60 overflow-hidden rounded-card shadow-card transition-shadow hover:shadow-pop focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30"
+      className="group relative isolate flex min-h-44 flex-col justify-end sm:min-h-60 overflow-hidden rounded-card shadow-card transition-shadow hover:shadow-pop focus-visible:outline-offset-4"
     >
       <Image
         src={photo.src}
@@ -31,7 +31,7 @@ export function PathCard({ path, goal }: { path: WellnessPath; goal?: string }) 
         fill
         sizes="(min-width: 640px) 33vw, 100vw"
         placeholder="blur"
-        className="-z-10 object-cover transition-transform duration-500 group-hover:scale-105"
+        className="-z-10 object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
         style={{ objectPosition: photo.position }}
       />
       <div className={`absolute inset-0 -z-10 bg-linear-to-t ${TINT[path]} to-transparent`} aria-hidden />

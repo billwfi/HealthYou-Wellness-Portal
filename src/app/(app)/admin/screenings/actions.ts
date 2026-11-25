@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/session";
 import { parseScreeningCsv, SCREENING_SOURCES, type ScreeningSource } from "@/lib/biometrics";
 import { audit } from "@/server/audit";
 import { awardScreeningPoints, saveScreening } from "@/server/screenings";
+import { notify } from "@/server/push";
 
 export type ImportState = {
   done: boolean;
@@ -67,6 +68,7 @@ export async function verifyScreening(id: number) {
   await db.biometricScreening.update({ where: { id: s.id }, data: { verifiedBy: admin.name, verifiedAt: new Date() } });
   await awardScreeningPoints(s.userId, s.id, s.screenedOn, s.source);
   await audit(admin.id, "screening.verify", "biometric_screening", s.id, { userId: s.userId });
+  await notify([s.userId], { title: "Screening verified", body: "Your screening results are confirmed and your points are in.", url: "/progress/health", tag: "screening" }, "account");
   revalidatePath("/", "layout");
 }
 

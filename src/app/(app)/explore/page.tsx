@@ -71,7 +71,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Sear
       />
 
       <nav aria-label="Filter by path" className="flex flex-wrap gap-2">
-        <Link href={href({ saved: savedOnly })} className={chipClass(!path)}>
+        <Link href={href({ saved: savedOnly })} className={chipClass(!path)} aria-current={!path ? "page" : undefined}>
           All
         </Link>
         {WELLNESS_PATHS.map((p) => (

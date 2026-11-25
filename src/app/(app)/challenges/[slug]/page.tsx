@@ -23,13 +23,13 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { FormError } from "@/components/auth/field";
 import { ActionButton } from "@/components/content/action-button";
 import { phaseLabel, scoreText } from "@/components/challenges/challenge-card";
 import { CopyLinkButton } from "@/components/ui/copy-button";
 import { PageBanner } from "@/components/brand/page-banner";
 import { challengePhoto } from "@/components/brand/photos";
 import { joinChallenge, leaveChallenge, makeCaptain, removeTeamMember, renameTeam } from "../actions";
+import { Notice } from "@/components/ui/notice";
 
 type Params = Promise<{ slug: string }>;
 type Search = Promise<{ error?: string; team?: string; "team-notice"?: string }>;
@@ -142,7 +142,7 @@ export default async function ChallengePage({ params, searchParams }: { params: 
             <p>
           {fmtDay(c.startDate)} – {fmtDay(c.endDate)} · {board.participants} {board.participants === 1 ? "participant" : "participants"}
             </p>
-            {phase === "draft" && <p className="mt-2 inline-flex rounded-full bg-peak-orange px-2.5 py-0.5 text-xs font-bold text-white">Draft: only admins can see this</p>}
+            {phase === "draft" && <p className="mt-2 inline-flex rounded-full bg-white px-2.5 py-0.5 text-xs font-bold text-peak-navy">Draft: only admins can see this</p>}
           </>
         }
         className="mb-0"
@@ -228,7 +228,11 @@ export default async function ChallengePage({ params, searchParams }: { params: 
             <Card id="join" className="scroll-mt-24">
               <CardHeader title="Join this challenge" description={TEAM_MODE_META[teamMode]?.summary} />
               <CardBody className="space-y-5">
-                <FormError message={sp.error ? (JOIN_ERRORS[sp.error] ?? "Something went wrong. Try again.") : null} />
+                {sp.error && (
+                  <Notice id="join-error" className="rounded-xl bg-accent-soft px-3.5 py-2.5 text-sm font-medium text-accent">
+                    {JOIN_ERRORS[sp.error] ?? "Something went wrong. Try again."}
+                  </Notice>
+                )}
                 {invited && (
                   <p className="rounded-xl bg-primary-soft px-3.5 py-2.5 text-sm font-medium text-primary">
                     You&apos;re invited to join team <strong>{invited.name}</strong>. It&apos;s listed first below.
@@ -257,7 +261,9 @@ export default async function ChallengePage({ params, searchParams }: { params: 
                           minLength={2}
                           maxLength={60}
                           placeholder="Team name"
-                          className="mt-1.5 block h-10 w-full rounded-xl border border-border bg-surface px-3.5 text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                          aria-invalid={sp.error === "team-name" || sp.error === "team-taken" || undefined}
+                          aria-describedby={sp.error === "team-name" || sp.error === "team-taken" ? "join-error" : undefined}
+                          className="mt-1.5 block h-10 w-full rounded-xl border border-input-border bg-surface px-3.5 text-ink focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary aria-[invalid=true]:border-accent"
                         />
                       </div>
                       <ActionButton className={buttonClasses({ variant: "secondary" })} pendingLabel="Creating…">
@@ -309,12 +315,9 @@ export default async function ChallengePage({ params, searchParams }: { params: 
                 }
               />
               {teamNotice && (
-                <p
-                  role="status"
-                  className={cn("mx-5 mt-4 rounded-xl px-3.5 py-2 text-sm font-medium", teamNotice.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}
-                >
+                <Notice id="team-notice" className={cn("mx-5 mt-4 rounded-xl px-3.5 py-2 text-sm font-medium", teamNotice.ok ? "bg-success-soft text-success" : "bg-accent-soft text-accent")}>
                   {teamNotice.text}
-                </p>
+                </Notice>
               )}
               <ul className="mt-2 divide-y divide-border">
                 {roster.map((m) => {
@@ -370,10 +373,12 @@ export default async function ChallengePage({ params, searchParams }: { params: 
                         id="renameTeam"
                         name="teamName"
                         defaultValue={myTeam.name}
+                        aria-invalid={!teamNotice?.ok && !!teamNotice && sp["team-notice"]?.startsWith("name-") ? true : undefined}
+                        aria-describedby={sp["team-notice"]?.startsWith("name-") ? "team-notice" : undefined}
                         required
                         minLength={2}
                         maxLength={60}
-                        className="mt-1.5 block h-10 w-full rounded-xl border border-border bg-surface px-3.5 text-ink focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                        className="mt-1.5 block h-10 w-full rounded-xl border border-input-border bg-surface px-3.5 text-ink focus:border-primary focus:outline-hidden focus:ring-2 focus:ring-primary aria-[invalid=true]:border-accent"
                       />
                     </div>
                     <ActionButton className={buttonClasses({ variant: "secondary" })} pendingLabel="Saving…">
@@ -440,7 +445,10 @@ export default async function ChallengePage({ params, searchParams }: { params: 
                   <li key={t.id} className={cn("flex items-center gap-3 px-5 py-3 text-sm", enrollment?.team?.id === t.id && "bg-primary-soft")}>
                     <span className="w-6 text-right font-bold tabular-nums text-ink-muted">{t.rank}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold text-ink">{t.name}</span>
+                      <span className="block truncate font-semibold text-ink">
+                        {t.name}
+                        {enrollment?.team?.id === t.id && <span className="ml-1.5 text-xs font-semibold text-primary">(your team)</span>}
+                      </span>
                       <span className="text-xs text-ink-muted">
                         {t.members} member{t.members === 1 ? "" : "s"}
                       </span>

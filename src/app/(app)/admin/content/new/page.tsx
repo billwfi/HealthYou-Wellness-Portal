@@ -7,7 +7,7 @@ import { ContentForm } from "../content-form";
 import { saveContent } from "../actions";
 import { getEditorTags } from "../editor-data";
 
-export const metadata: Metadata = { title: "New content" };
+export const metadata: Metadata = { title: "Admin: New content" };
 
 export default async function NewContentPage() {
   await requireAdmin();
