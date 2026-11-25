@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Activity, Footprints, Timer, Trash2, Utensils } from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowRight, CalendarCheck, Footprints, HeartPulse, Target, Timer, Trash2, Utensils } from "lucide-react";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { addDays, programDay, programToday } from "@/lib/dates";
@@ -9,6 +10,12 @@ import { BANNERS } from "@/components/brand/photos";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/content/action-button";
+import { SectionTitle } from "@/components/ui/section-title";
+import { ColumnChart } from "@/components/charts/column-chart";
+import { getHabitCalendar, getWeeklyMinutes } from "@/server/progress";
+import { getBiometricHistory } from "@/server/screenings";
+import { formatMarker, MARKERS, meetsTarget } from "@/lib/biometrics";
+import { cn } from "@/lib/utils";
 import { LogActivityForm } from "./log-form";
 import { deleteActivity } from "./actions";
 
@@ -21,7 +28,7 @@ export default async function ProgressPage() {
   const today = programToday();
   const weekStart = addDays(today, -6);
 
-  const [types, entries, points] = await Promise.all([
+  const [types, entries, points, weekly, calendar, bio] = await Promise.all([
     db.activityType.findMany({ where: { isActive: true }, orderBy: { id: "asc" }, select: { id: true, name: true, unit: true, metric: true, category: true } }),
     db.activityEntry.findMany({
       where: { userId: user.id, entryDate: { gte: addDays(today, -(HISTORY_DAYS - 1)) } },
@@ -32,6 +39,9 @@ export default async function ProgressPage() {
       where: { userId: user.id, sourceType: "activity", occurredOn: { gte: addDays(today, -(HISTORY_DAYS - 1)) } },
       select: { sourceId: true, points: true },
     }),
+    getWeeklyMinutes(user.id),
+    getHabitCalendar(user.id),
+    getBiometricHistory(user.id),
   ]);
   const pointsFor = new Map(points.map((p) => [p.sourceId, p.points]));
 
@@ -136,6 +146,92 @@ export default async function ProgressPage() {
           )}
         </Card>
       </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        {/* Weekly active minutes */}
+        <Card className="p-5">
+          <SectionTitle icon={Timer} tone="blue" title="Active minutes by week" description="Last 8 weeks, Monday to Sunday" />
+          <div className="mt-4">
+            {weekly.some((w) => w.value > 0) ? (
+              <ColumnChart data={weekly} title="Active minutes by week, last 8 weeks" unit="Active minutes" />
+            ) : (
+              <p className="py-8 text-center text-sm text-ink-muted">Log a walk, run or workout and your weekly minutes will show up here.</p>
+            )}
+          </div>
+        </Card>
+
+        {/* Habit calendar */}
+        <Card className="p-5">
+          <SectionTitle icon={CalendarCheck} tone="orange" title="Habits, last 4 weeks" description="Each square is a day; filled means checked off" />
+          {calendar.habits.length ? (
+            <ul className="mt-4 space-y-3">
+              {calendar.habits.map((h) => (
+                <li key={h.id}>
+                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className="truncate font-semibold text-ink">{h.title}</span>
+                    <span className="shrink-0 text-xs text-ink-muted tabular-nums">
+                      {h.count} of {calendar.days.length} days
+                    </span>
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-[repeat(28,minmax(0,1fr))] gap-[2px]" aria-hidden>
+                    {h.cells.map((done, i) => (
+                      <span
+                        key={i}
+                        title={`${new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(calendar.days[i])}: ${done ? "done" : "not done"}`}
+                        className={cn("aspect-square rounded-[3px]", done ? "bg-chart-1" : "bg-surface-muted")}
+                      />
+                    ))}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="py-8 text-center text-sm text-ink-muted">
+              <Link href="/welcome" className="font-semibold text-primary hover:underline">Choose a few habits</Link> to start building streaks.
+            </p>
+          )}
+        </Card>
+      </div>
+
+      {/* Health numbers */}
+      <Card className="mt-6 p-5">
+        <SectionTitle
+          icon={HeartPulse}
+          tone="red"
+          title="Your health numbers"
+          description="For your own tracking. Rewards come from taking part, never from your results."
+          action={
+            <Link href="/progress/health" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+              {bio.series.size ? "Trends & targets" : "Add a screening"} <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          }
+        />
+        {bio.series.size ? (
+          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {MARKERS.filter((m) => bio.series.has(m.key)).slice(0, 8).map((m) => {
+              const list = bio.series.get(m.key)!;
+              const latest = list[list.length - 1];
+              const goal = bio.goals.get(m.key);
+              return (
+                <div key={m.key} className="rounded-xl bg-surface-muted p-3">
+                  <dt className="truncate text-xs text-ink-muted">{m.label}</dt>
+                  <dd className="mt-0.5 text-lg font-bold tabular-nums text-ink">{formatMarker(latest.value, m.key)}</dd>
+                  {goal && (
+                    <dd className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                      <Target className="size-3.5" aria-hidden />
+                      {meetsTarget(latest.value, goal.target, goal.direction) ? "At your target" : `Target ${goal.direction === "above" ? "≥" : "≤"} ${formatMarker(goal.target, m.key)}`}
+                    </dd>
+                  )}
+                </div>
+              );
+            })}
+          </dl>
+        ) : (
+          <p className="mt-4 text-sm text-ink-muted">
+            Results from your biometric screening appear here. A verified screening earns your yearly screening points.
+          </p>
+        )}
+      </Card>
     </>
   );
 }

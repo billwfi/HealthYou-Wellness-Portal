@@ -1,6 +1,6 @@
 # HealthYou Redesign Plan
 
-**Status:** Phases 0–1 deployed; Phase 2 in progress, 2026-11-25 · **Branch:** `redesign/modern-platform`
+**Status:** Phases 0–3 deployed, 2026-11-25 · **Branch:** `redesign/modern-platform`
 **Research:** [docs/research/2026-11-market-scan.md](research/2026-11-market-scan.md)
 
 ## Decisions (2026-11-24)
@@ -147,6 +147,8 @@ Built so far (2026-11-25): activity logging on /progress (7-day backfill, per-ca
 - Points rules engine with daily and yearly caps, written to the points ledger.
 - Progress page: activity, habit streaks and biometric trends against personal goals.
 - Reward tiers, redemption requests and the rewards wallet.
+
+Built (2026-11-25): screening CSV import for admins (onsite/lab/physician form; same member+date+source replaces results; unknown emails reported) and self-reported results that earn points only after admin verification; screening points capped once a year by the rule; Progress page with weekly active-minutes chart, 4-week habit calendar and health-number summary; /progress/health with a trend chart per marker and personal targets (new biometric_goals table); rewards wallet (tier status, request a reward, points history); admin queue to fulfill or cancel requests, tier editor, earning-rules editor and manual point adjustments, all audited. Health results never affect points.
 
 **Phase 4: Reporting, sync and polish**
 - Aggregate reports for the City, de-identified, only for groups of at least 10.

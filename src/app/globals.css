@@ -34,6 +34,7 @@
   --path-life-soft: #fbeedd;
   --path-mind: #5b48c2;
   --path-mind-soft: #ece9fa;
+  --chart-1: #1565c0;
 
   --elev-card: 0 1px 2px rgb(19 27 58 / 4%), 0 8px 24px rgb(19 27 58 / 5%);
   --elev-pop: 0 12px 32px rgb(19 27 58 / 12%);
@@ -68,6 +69,7 @@
     --path-life-soft: #35260f;
     --path-mind: #a497f2;
     --path-mind-soft: #241f45;
+    --chart-1: #4a8fe7; /* validated for the dark surface */
 
     --elev-card: 0 1px 2px rgb(0 0 0 / 30%);
     --elev-pop: 0 12px 32px rgb(0 0 0 / 45%);
@@ -98,6 +100,7 @@
   --color-path-life-soft: var(--path-life-soft);
   --color-path-mind: var(--path-mind);
   --color-path-mind-soft: var(--path-mind-soft);
+  --color-chart-1: var(--chart-1);
   /* Fixed brand colours from the logo's mountain (same in light and dark). */
   --color-peak-navy: #0b1f4d;
   --color-peak-green: #3f9a3c;

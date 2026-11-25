@@ -9,6 +9,8 @@ import { ACTIVITY_BACKFILL_DAYS as BACKFILL_DAYS, METRIC_META } from "@/lib/chal
 import type { ChallengeMetric } from "@/lib/domain";
 import { awardPoints } from "@/server/points";
 import { recomputeProgress } from "@/server/challenges";
+import { saveScreening } from "@/server/screenings";
+import { checkMarker, MARKER_BY_KEY, MARKERS } from "@/lib/biometrics";
 
 export type LogState = { error: string | null; ok: string | null };
 
@@ -81,4 +83,58 @@ export async function deleteActivity(entryId: number) {
   ]);
   await recomputeProgress(user.id, entry.entryDate, entry.entryDate);
   revalidatePath("/", "layout");
+}
+
+// ── Health numbers ───────────────────────────────────────────────────────────
+
+export type ScreeningState = { error: string | null; ok: string | null };
+
+/**
+ * A member enters results from their own screening or doctor's visit. They're
+ * tracked right away; screening points follow once an admin verifies them.
+ */
+export async function saveSelfReportedScreening(_prev: ScreeningState, formData: FormData): Promise<ScreeningState> {
+  const user = await requireUser();
+  const day = String(formData.get("screenedOn") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { error: "Choose the date of your screening.", ok: null };
+  const date = dateOnly(day);
+  const today = programToday();
+  if (date > today) return { error: "The date can't be in the future.", ok: null };
+  if (date < addDays(today, -730)) return { error: "Enter screenings from the last two years.", ok: null };
+
+  const results: { marker: string; value: number }[] = [];
+  for (const m of MARKERS) {
+    const raw = String(formData.get(`m_${m.key}`) ?? "").trim();
+    if (!raw) continue;
+    const value = Number(raw);
+    const problem = checkMarker(m.key, value);
+    if (problem) return { error: problem, ok: null };
+    results.push({ marker: m.key, value });
+  }
+  if (!results.length) return { error: "Enter at least one result.", ok: null };
+
+  await saveScreening({ userId: user.id, screenedOn: day, source: "self_reported", results });
+  revalidatePath("/", "layout");
+  return { error: null, ok: `Saved ${results.length} result${results.length === 1 ? "" : "s"}. Your screening points follow once the wellness team verifies it.` };
+}
+
+export async function setBiometricGoal(marker: string, formData: FormData) {
+  const user = await requireUser();
+  const m = MARKER_BY_KEY.get(marker);
+  if (!m) return;
+  const target = Number(formData.get("target"));
+  const direction = formData.get("direction") === "above" ? "above" : "below";
+  if (checkMarker(marker, target)) return;
+  await db.biometricGoal.upsert({
+    where: { userId_marker: { userId: user.id, marker } },
+    create: { userId: user.id, marker, target, direction },
+    update: { target, direction },
+  });
+  revalidatePath("/progress", "layout");
+}
+
+export async function clearBiometricGoal(marker: string) {
+  const user = await requireUser();
+  await db.biometricGoal.deleteMany({ where: { userId: user.id, marker } });
+  revalidatePath("/progress", "layout");
 }

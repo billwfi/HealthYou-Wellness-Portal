@@ -44,6 +44,7 @@ model User {
   activityEntries     ActivityEntry[]
   deviceConnections   DeviceConnection[]
   biometricScreenings BiometricScreening[]
+  biometricGoals      BiometricGoal[]
   captainOf           Team[]
   teamMemberships     TeamMember[]
   enrollments         ChallengeEnrollment[]
@@ -408,6 +409,21 @@ model BiometricResult {
 
   @@unique([screeningId, marker])
   @@map("biometric_results")
+}
+
+/// A member's personal target for one marker (their own tracking; never affects rewards).
+model BiometricGoal {
+  userId    String   @map("user_id") @db.NVarChar(64)
+  marker    String   @db.NVarChar(50)
+  target    Decimal  @db.Decimal(8, 2)
+  /// below | above: which side of the target is the goal
+  direction String   @db.NVarChar(10)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([userId, marker])
+  @@map("biometric_goals")
 }
 
 // ── Challenges ───────────────────────────────────────────────────────────────

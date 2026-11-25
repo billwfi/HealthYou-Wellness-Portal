@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BarChart3, CalendarDays, FileText, Gift, Trophy, Users, type LucideIcon } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, FileText, Gift, HeartPulse, Trophy, Users, type LucideIcon } from "lucide-react";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/session";
 import { programToday } from "@/lib/dates";
@@ -47,13 +47,15 @@ function Section({ href, icon: Icon, title, description, stat, soon }: {
 
 export default async function AdminPage() {
   await requireAdmin();
-  const [published, drafts, members, onboarded, upcomingEvents, liveChallenges] = await Promise.all([
+  const [published, drafts, members, onboarded, upcomingEvents, liveChallenges, pendingRewards, pendingScreenings] = await Promise.all([
     db.contentItem.count({ where: { publishedAt: { not: null } } }),
     db.contentItem.count({ where: { publishedAt: null } }),
     db.user.count(),
     db.memberProfile.count({ where: { onboardedAt: { not: null } } }),
     db.event.count({ where: { eventDate: { gte: programToday() } } }),
     db.challenge.count({ where: { status: { in: ["scheduled", "active"] }, endDate: { gte: programToday() } } }),
+    db.rewardRedemption.count({ where: { status: "pending" } }),
+    db.biometricScreening.count({ where: { verifiedAt: null } }),
   ]);
 
   return (
@@ -81,7 +83,20 @@ export default async function AdminPage() {
           description="Build from templates, publish, and finish to award points."
           stat={`${liveChallenges} live or upcoming`}
         />
-        <Section icon={Gift} title="Points & rewards" description="Earning rules, caps and reward tiers." soon="Phase 3" />
+        <Section
+          href="/admin/rewards"
+          icon={Gift}
+          title="Points & rewards"
+          description="Reward requests, tiers, earning rules and point adjustments."
+          stat={`${pendingRewards} request${pendingRewards === 1 ? "" : "s"} waiting`}
+        />
+        <Section
+          href="/admin/screenings"
+          icon={HeartPulse}
+          title="Screenings"
+          description="Import biometric results and verify self-reported screenings."
+          stat={`${pendingScreenings} awaiting review`}
+        />
         <Section icon={Users} title="Members" description="Roles, member types and departments." soon="Later" />
         <Section icon={BarChart3} title="Reports" description="De-identified participation reports for the City." soon="Phase 4" />
       </div>
