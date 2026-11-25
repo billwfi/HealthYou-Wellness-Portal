@@ -1,6 +1,6 @@
 # HealthYou Redesign Plan
 
-**Status:** Phase 0 in progress, 2026-11-24 · **Branch:** `redesign/modern-platform`
+**Status:** Phase 0 deployed; Phase 1 in progress, 2026-11-25 · **Branch:** `redesign/modern-platform`
 **Research:** [docs/research/2026-11-market-scan.md](research/2026-11-market-scan.md)
 
 ## Decisions (2026-11-24)
@@ -131,6 +131,8 @@ The look follows Wellable, under City branding:
 - Registration, then an interest picker (Body, Life, Mind), then path goals.
 - Content tagging, and the rule-based recommendations behind the "For you" feed.
 - The Today page, and Explore pages that read from the database.
+
+Built so far (2026-11-25): four-step onboarding at /welcome (member type, interests, a goal per path, up to 5 habits), editable from Profile; rule-based "For you" feed with a reason on every pick (featured, then interest matches, then goal path; completed and dismissed items drop out; at most half from one path); habit check-ins with streaks and capped points; Explore filtered by path, topic and saved, with detail pages and "Mark complete" (capped points). Still to do: admin content editor, events on Today.
 
 **Phase 2: Activity and challenges**
 - Logging activity, with each category's daily cap applied.

@@ -4,7 +4,7 @@
 #   infra/deploy.sh            # infra + images + app (idempotent; safe to rerun)
 #   infra/deploy.sh migrate    # run `prisma migrate deploy` as a Container Apps job
 #   infra/deploy.sh seed       # run the reference-data seed as a job
-#   infra/deploy.sh admin you@example.com   # grant admin role (after signing up)
+#   infra/deploy.sh admin [you@example.com] # grant admin role (no email = the only account)
 #   infra/deploy.sh egress     # print the outbound IP the jobs/apps use
 #
 # Reads DB_* and PROD_BETTER_AUTH_SECRET from .env.local (never committed).
@@ -81,7 +81,7 @@ build_image() { # $1 = image:tag, $2 = Dockerfile target
 case "${1:-deploy}" in
   migrate) run_job "npx prisma migrate deploy"; exit ;;
   seed)    run_job "npx tsx scripts/seed.ts"; exit ;;
-  admin)   run_job "npx tsx scripts/make-admin.ts '${2:?email}'"; exit ;;
+  admin)   run_job "npx tsx scripts/make-admin.ts '${2:-}'"; exit ;;
   egress)  run_job "node -e \"fetch('https://api.ipify.org').then(r=>r.text()).then(ip=>console.log('egress ip: '+ip))\""; exit ;;
   deploy)  ;;
   *) echo "usage: $0 [deploy|migrate|seed|admin <email>|egress]"; exit 2 ;;
