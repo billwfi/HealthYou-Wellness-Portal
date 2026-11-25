@@ -47,12 +47,13 @@ function Section({ href, icon: Icon, title, description, stat, soon }: {
 
 export default async function AdminPage() {
   await requireAdmin();
-  const [published, drafts, members, onboarded, upcomingEvents] = await Promise.all([
+  const [published, drafts, members, onboarded, upcomingEvents, liveChallenges] = await Promise.all([
     db.contentItem.count({ where: { publishedAt: { not: null } } }),
     db.contentItem.count({ where: { publishedAt: null } }),
     db.user.count(),
     db.memberProfile.count({ where: { onboardedAt: { not: null } } }),
     db.event.count({ where: { eventDate: { gte: programToday() } } }),
+    db.challenge.count({ where: { status: { in: ["scheduled", "active"] }, endDate: { gte: programToday() } } }),
   ]);
 
   return (
@@ -73,7 +74,13 @@ export default async function AdminPage() {
           description="Webinars, workshops and classes on members' Today page."
           stat={`${upcomingEvents} upcoming`}
         />
-        <Section icon={Trophy} title="Challenges" description="Build challenges from templates, teams and milestones." soon="Phase 2" />
+        <Section
+          href="/admin/challenges"
+          icon={Trophy}
+          title="Challenges"
+          description="Build from templates, publish, and finish to award points."
+          stat={`${liveChallenges} live or upcoming`}
+        />
         <Section icon={Gift} title="Points & rewards" description="Earning rules, caps and reward tiers." soon="Phase 3" />
         <Section icon={Users} title="Members" description="Roles, member types and departments." soon="Later" />
         <Section icon={BarChart3} title="Reports" description="De-identified participation reports for the City." soon="Phase 4" />

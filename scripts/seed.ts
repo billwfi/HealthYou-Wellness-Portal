@@ -50,6 +50,7 @@ const ACTIVITY_TYPES = [
   { slug: "swimming", name: "Swimming", category: "physical_activity", metric: "active_minutes", unit: "min", pointsPerUnit: "0.15" },
   { slug: "strength", name: "Strength training", category: "physical_activity", metric: "active_minutes", unit: "min", pointsPerUnit: "0.12" },
   { slug: "yoga", name: "Yoga", category: "physical_activity", metric: "active_minutes", unit: "min", pointsPerUnit: "0.1" },
+  { slug: "distance", name: "Distance (walk, run or roll)", category: "physical_activity", metric: "distance_miles", unit: "mi", pointsPerUnit: "1" },
   { slug: "fruit-veg", name: "Fruit & vegetable servings", category: "nutrition", metric: "servings", unit: "servings", pointsPerUnit: "1" },
   { slug: "water", name: "Water", category: "nutrition", metric: "servings", unit: "glasses", pointsPerUnit: "0.5" },
 ] as const;

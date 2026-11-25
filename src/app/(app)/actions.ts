@@ -7,6 +7,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requireUser } from "@/lib/session";
 import { programToday, programDay } from "@/lib/dates";
 import { awardPoints } from "@/server/points";
+import { recomputeProgress } from "@/server/challenges";
 
 const Id = z.coerce.number().int().positive();
 
@@ -109,5 +110,7 @@ export async function toggleHabitToday(habitId: number) {
       on: today,
     });
   }
+  // Habit check-ins count toward habit-based challenges.
+  await recomputeProgress(user.id, today, today);
   refresh();
 }

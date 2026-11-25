@@ -1,11 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, Flame, Sparkles, Target, Trophy } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, Flame, Plus, Sparkles, Target, Trophy } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { getPointsSummary } from "@/server/points";
 import { getRecommendations } from "@/server/recommendations";
 import { getTodayHabits } from "@/server/habits";
 import { getMemberContext } from "@/server/member";
 import { getUpcomingEvents } from "@/server/events";
+import { getChallengesForMember } from "@/server/challenge-list";
+import { isJoinable } from "@/lib/challenges";
+import { ProgressBar } from "@/components/ui/progress-bar";
+import { phaseLabel, scoreText } from "@/components/challenges/challenge-card";
 import { toggleHabitToday } from "./actions";
 import { cn, currentPlanYear, PATHS } from "@/lib/utils";
 import { PROGRAM_TIME_ZONE, programToday } from "@/lib/dates";
@@ -28,28 +32,36 @@ function greeting(hour: number) {
 export default async function TodayPage() {
   const user = await requireUser();
   const planYear = currentPlanYear();
-  const [{ total, nextTier }, picks, habits, member, events] = await Promise.all([
+  const [{ total, nextTier }, picks, habits, member, events, challengeItems] = await Promise.all([
     getPointsSummary(user.id, planYear),
     getRecommendations(user.id, { limit: 4 }),
     getTodayHabits(user.id),
     getMemberContext(user.id),
     getUpcomingEvents({ limit: 3 }),
+    getChallengesForMember(user.id),
   ]);
   const now = new Date();
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: PROGRAM_TIME_ZONE }).format(now));
   const firstName = user.firstName || user.name.split(" ")[0];
   const habitsDone = habits.filter((h) => h.doneToday).length;
   const today = programToday(now);
+  const myChallenges = challengeItems.filter((i) => i.enrollment && isJoinable(i.phase));
+  const openChallenges = challengeItems.filter((i) => !i.enrollment && isJoinable(i.phase)).length;
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
         <p className="text-sm font-semibold text-ink-muted">
           {new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: PROGRAM_TIME_ZONE }).format(now)}
         </p>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight sm:text-3xl">
           {greeting(hour)}, {firstName}
         </h1>
+        </div>
+        <ButtonLink href="/progress#log">
+          <Plus className="size-4" aria-hidden /> Log activity
+        </ButtonLink>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -204,14 +216,40 @@ export default async function TodayPage() {
 
         {/* Challenges */}
         <Card>
-          <CardHeader title="Your challenges" action={<Badge tone="primary">Coming soon</Badge>} />
-          <EmptyState
-            icon={Trophy}
-            title="No active challenges yet"
-            action={<ButtonLink href="/challenges" variant="secondary">Browse challenges</ButtonLink>}
-          >
-            Join a team or go solo. Live leaderboards and milestones are on the way.
-          </EmptyState>
+          <CardHeader
+            title="Your challenges"
+            action={
+              <Link href="/challenges" className="text-sm font-semibold text-primary hover:underline">
+                {myChallenges.length ? "All" : "Browse"}
+              </Link>
+            }
+          />
+          {myChallenges.length ? (
+            <ul className="space-y-4 p-5">
+              {myChallenges.slice(0, 3).map(({ challenge: c, summary, enrollment, phase }) => (
+                <li key={c.id}>
+                  <Link href={`/challenges/${c.slug}`} className="group block">
+                    <span className="block truncate text-sm font-semibold text-ink group-hover:text-primary">{c.name}</span>
+                    <span className="mt-0.5 flex items-center justify-between gap-2 text-xs text-ink-muted">
+                      <span>{summary ? scoreText(summary.score, c.type, c.metric) : ""}{summary?.goal != null && summary.pct != null ? ` of ${scoreText(summary.goal, c.type, c.metric)}` : ""}</span>
+                      <span>{enrollment?.completedAt ? "Completed" : phaseLabel(phase, c.startDate, c.endDate, today)}</span>
+                    </span>
+                    {summary?.pct != null && (
+                      <ProgressBar value={summary.pct} label={`Progress in ${c.name}`} tone={enrollment?.completedAt ? "success" : "primary"} className="mt-1.5" />
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              icon={Trophy}
+              title={openChallenges ? `${openChallenges} open to join` : "No active challenges"}
+              action={<ButtonLink href="/challenges" variant="secondary">Browse challenges</ButtonLink>}
+            >
+              Join a team or go solo. Activity you log counts automatically.
+            </EmptyState>
+          )}
         </Card>
       </div>
 

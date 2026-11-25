@@ -1,6 +1,6 @@
 # HealthYou Redesign Plan
 
-**Status:** Phase 0 deployed; Phase 1 in progress, 2026-11-25 · **Branch:** `redesign/modern-platform`
+**Status:** Phases 0–1 deployed; Phase 2 in progress, 2026-11-25 · **Branch:** `redesign/modern-platform`
 **Research:** [docs/research/2026-11-market-scan.md](research/2026-11-market-scan.md)
 
 ## Decisions (2026-11-24)
@@ -139,6 +139,8 @@ Built so far (2026-11-25): four-step onboarding at /welcome (member type, intere
 - The challenge engine: start with leaderboard, target and streak.
 - Team leaderboards ranked by average points per member.
 - Admin challenge builder and template library.
+
+Built so far (2026-11-25): activity logging on /progress (7-day backfill, per-category daily point caps, delete own entries); challenge engine that recomputes per-day progress whenever activity or habits change (leaderboard, target, race, streak, stick-to-it, group goal; daily caps; late joiners get credit from the start); join solo, start or join a team; individual and team leaderboards (teams by average per member; names shown as first name + last initial); goal types complete and award points automatically, leaderboard/group types award everyone who took part when an admin finishes the challenge; admin builder with template library, draft/publish, recalculation when scoring changes, archive vs delete. Still to do: milestones, eligibility rules, team captain tools.
 
 **Phase 3: Progress and rewards**
 - Screening import and biometric results (completing a screening earns points).

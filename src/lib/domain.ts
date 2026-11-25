@@ -19,6 +19,7 @@ export const POINTS_CATEGORIES = [
 ] as const;
 export const ACTIVITY_SOURCES = ["manual", "device", "import", "admin"] as const;
 export const CHALLENGE_TYPES = ["leaderboard", "target", "streak", "stick_to_it", "race", "group_goal"] as const;
+export const CHALLENGE_METRICS = ["steps", "active_minutes", "distance_miles", "workouts", "servings", "habit_checkins"] as const;
 export const TEAM_MODES = ["individual", "team", "hybrid"] as const;
 export const CHALLENGE_STATUSES = ["draft", "scheduled", "active", "completed", "archived"] as const;
 
@@ -30,5 +31,6 @@ export type EventType = (typeof EVENT_TYPES)[number];
 export type PointsCategory = (typeof POINTS_CATEGORIES)[number];
 export type ActivitySource = (typeof ACTIVITY_SOURCES)[number];
 export type ChallengeType = (typeof CHALLENGE_TYPES)[number];
+export type ChallengeMetric = (typeof CHALLENGE_METRICS)[number];
 export type TeamMode = (typeof TEAM_MODES)[number];
 export type ChallengeStatus = (typeof CHALLENGE_STATUSES)[number];
