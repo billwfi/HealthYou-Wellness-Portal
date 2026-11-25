@@ -26,10 +26,14 @@ JOB="job-${APP_NAME}-migrate"
 
 run_job() { # $1 = shell command to run in the tools image
   echo "▶ Starting job: $1"
-  local exec image body status
+  local exec container body status
   # Start via REST: `az containerapp job start --args` misparses values like "-c".
-  image=$(azs containerapp job show -g "$RG" -n "$JOB" --query "properties.template.containers[0].image" -o tsv)
-  body=$(IMAGE="$image" CMD="$1" node -e 'console.log(JSON.stringify({containers:[{name:"tools",image:process.env.IMAGE,command:["/bin/sh","-c",process.env.CMD]}]}))')
+  # The override replaces the whole container, so carry over its image, env and resources.
+  container=$(azs containerapp job show -g "$RG" -n "$JOB" --query "properties.template.containers[0]" -o json)
+  body=$(CONTAINER="$container" CMD="$1" node -e '
+    const c = JSON.parse(process.env.CONTAINER);
+    const { name, image, env, resources } = c;
+    console.log(JSON.stringify({ containers: [{ name, image, env, resources, command: ["/bin/sh", "-c", process.env.CMD] }] }));')
   exec=$(MSYS_NO_PATHCONV=1 az rest --method post --only-show-errors \
     --url "https://management.azure.com/subscriptions/$SUBSCRIPTION/resourceGroups/$RG/providers/Microsoft.App/jobs/$JOB/start?api-version=2024-03-01" \
     --body "$body" --query name -o tsv)
