@@ -32,10 +32,7 @@ export default async function ContentPage({ params }: { params: Params }) {
   const item = await getItem((await params).slug);
   if (!item) notFound();
 
-  const [interaction, rule] = await Promise.all([
-    db.contentInteraction.findUnique({ where: { userId_contentId: { userId: user.id, contentId: item.id } } }),
-    db.pointsRule.findFirst({ where: { slug: "content", isActive: true }, orderBy: { planYear: "desc" }, select: { points: true } }),
-  ]);
+  const interaction = await db.contentInteraction.findUnique({ where: { userId_contentId: { userId: user.id, contentId: item.id } } });
   const path = item.path as WellnessPath;
   const { label, icon: Icon } = contentTypeMeta(item.type);
   const saved = Boolean(interaction?.savedAt);
@@ -83,7 +80,7 @@ export default async function ContentPage({ params }: { params: Params }) {
         ) : (
           <form action={completeContent.bind(null, item.id)}>
             <ActionButton className={buttonClasses()} pendingLabel="Saving…">
-              <CheckCircle2 className="size-4" aria-hidden /> Mark complete{rule ? ` · +${rule.points} pts` : ""}
+              <CheckCircle2 className="size-4" aria-hidden /> Mark complete{item.points > 0 ? ` · +${item.points} pts` : ""}
             </ActionButton>
           </form>
         )}

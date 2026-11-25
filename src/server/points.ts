@@ -27,18 +27,20 @@ type Award = {
   description: string;
   /** Program calendar day (a @db.Date value). */
   on: Date;
+  /** Overrides the rule's amount (e.g. per-item content points); caps still apply. */
+  points?: number;
 };
 
 /**
  * Award participation points under a rule, trimmed to its daily and yearly caps.
  * Returns the points actually awarded (0 if capped, inactive, or already awarded).
  */
-export async function awardPoints({ userId, ruleSlug, sourceType, sourceId, description, on }: Award) {
+export async function awardPoints({ userId, ruleSlug, sourceType, sourceId, description, on, points: amount }: Award) {
   const planYear = on.getUTCFullYear();
   const rule = await db.pointsRule.findUnique({ where: { planYear_slug: { planYear, slug: ruleSlug } } });
   if (!rule?.isActive) return 0;
 
-  let points = rule.points;
+  let points = amount ?? rule.points;
   if (rule.maxPerDay != null) {
     const { _sum } = await db.pointsLedger.aggregate({
       where: { userId, ruleId: rule.id, occurredOn: on },

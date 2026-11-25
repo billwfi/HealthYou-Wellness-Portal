@@ -12,7 +12,7 @@ const Id = z.coerce.number().int().positive();
 
 async function contentFor(contentId: unknown) {
   const id = Id.parse(contentId);
-  const item = await db.contentItem.findFirst({ where: { id, publishedAt: { not: null } }, select: { id: true, title: true } });
+  const item = await db.contentItem.findFirst({ where: { id, publishedAt: { not: null } }, select: { id: true, title: true, points: true } });
   if (!item) throw new Error("Content not found");
   return item;
 }
@@ -56,13 +56,15 @@ export async function completeContent(contentId: number) {
     create: { userId: user.id, contentId: item.id, viewedAt: now, completedAt: now },
     update: { completedAt: now },
   });
-  await awardPoints({
+  // Each item sets its own points (0 = none); the content rule's daily cap still applies.
+  if (item.points > 0) await awardPoints({
     userId: user.id,
     ruleSlug: "content",
     sourceType: "content",
     sourceId: String(item.id),
     description: `Completed: ${item.title}`.slice(0, 500),
     on: programToday(now),
+    points: item.points,
   });
   refresh();
 }
