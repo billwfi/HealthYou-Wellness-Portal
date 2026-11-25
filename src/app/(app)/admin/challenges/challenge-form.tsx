@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { startTransition, useActionState, useState, useTransition, type ReactNode } from "react";
-import { Archive, Trash2 } from "lucide-react";
+import { Archive, Plus, Trash2, X } from "lucide-react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FormError } from "@/components/auth/field";
 import { control, FieldShell, invalidProps } from "@/components/admin/form-fields";
-import { CHALLENGE_METRICS, CHALLENGE_TYPES, TEAM_MODES, type ChallengeMetric, type ChallengeType, type TeamMode } from "@/lib/domain";
+import { CHALLENGE_METRICS, CHALLENGE_TYPES, MEMBER_TYPES, TEAM_MODES, type ChallengeMetric, type ChallengeType, type TeamMode } from "@/lib/domain";
 import { CHALLENGE_TYPE_META, isDayScored, METRIC_META, TEAM_MODE_META } from "@/lib/challenges";
 import { slugify } from "@/lib/slug";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,9 @@ export type ChallengeFormValues = {
   pointsOnCompletion: string;
   published: boolean;
   templateId: string;
+  milestones: { label: string; threshold: string; points: string }[];
+  eligMemberTypes: string[];
+  eligDepartments: string;
 };
 
 function Radio<T extends string>({ name, value, checked, onChange, title, hint }: { name: string; value: T; checked: boolean; onChange: (v: T) => void; title: string; hint: string }) {
@@ -65,10 +68,13 @@ export function ChallengeForm({
   const [metric, setMetric] = useState(initial.metric);
   const [teamMode, setTeamMode] = useState(initial.teamMode);
   const [published, setPublished] = useState(initial.published);
+  const [milestones, setMilestones] = useState(() => initial.milestones.map((m, i) => ({ ...m, key: i })));
+  const [nextKey, setNextKey] = useState(initial.milestones.length);
   const fe = state.fieldErrors;
   const typeMeta = CHALLENGE_TYPE_META[type];
   const unit = METRIC_META[metric].unit;
   const field = (id: keyof ChallengeFormValues) => ({ id, name: id, defaultValue: initial[id] as string, ...invalidProps(id, fe[id]) });
+  const scoreUnit = isDayScored(type) ? "days" : unit;
 
   return (
     <form
@@ -169,6 +175,70 @@ export function ChallengeForm({
                 <input {...field("maxTeamSize")} type="number" min={2} inputMode="numeric" className={cn(control, "h-11")} />
               </FieldShell>
             </div>
+          )}
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Who&apos;s eligible</h2>
+            <p className="text-xs text-ink-muted">Leave everything blank to open it to all members. Members who don&apos;t match won&apos;t see it.</p>
+          </div>
+          <fieldset>
+            <legend className="text-xs font-semibold text-ink-muted">Member types</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {MEMBER_TYPES.map((t) => (
+                <label key={t} className="cursor-pointer">
+                  <input type="checkbox" name="eligMemberType" value={t} defaultChecked={initial.eligMemberTypes.includes(t)} className="peer sr-only" />
+                  <span className="inline-flex rounded-full border border-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:ring-4 peer-focus-visible:ring-primary/15">
+                    {{ employee: "Employees", spouse: "Spouses & partners", retiree: "Retirees" }[t]}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <FieldShell id="eligDepartments" label="Departments" optional hint="One per line or comma-separated. Matched against the department members enter in their profile (case doesn't matter).">
+            <textarea id="eligDepartments" name="eligDepartments" defaultValue={initial.eligDepartments} rows={2} className={cn(control, "py-2.5")} />
+          </FieldShell>
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Milestones</h2>
+            <p className="text-xs text-ink-muted">
+              Bonus points along the way, in {scoreUnit}. Each pays once per member, even if you edit it later.
+            </p>
+          </div>
+          {milestones.length > 0 && (
+            <ul className="space-y-2">
+              {milestones.map((m, i) => (
+                <li key={m.key} className="grid grid-cols-[1fr_110px_90px_auto] items-center gap-2">
+                  <input name="milestoneLabel" defaultValue={m.label} placeholder="e.g. Halfway there" aria-label={`Milestone ${i + 1} name`} maxLength={200} className={cn(control, "h-10")} />
+                  <input name="milestoneThreshold" defaultValue={m.threshold} type="number" min={0} step="any" inputMode="decimal" placeholder={scoreUnit} aria-label={`Milestone ${i + 1} amount in ${scoreUnit}`} className={cn(control, "h-10")} />
+                  <input name="milestonePoints" defaultValue={m.points} type="number" min={0} inputMode="numeric" placeholder="pts" aria-label={`Milestone ${i + 1} points`} className={cn(control, "h-10")} />
+                  <button
+                    type="button"
+                    onClick={() => setMilestones((ms) => ms.filter((x) => x.key !== m.key))}
+                    className="grid size-9 place-items-center rounded-full text-ink-subtle hover:bg-surface-muted hover:text-accent"
+                    aria-label={`Remove milestone ${i + 1}`}
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {fe.milestones && <p className="text-xs font-medium text-accent">{fe.milestones}</p>}
+          {milestones.length < 10 && (
+            <button
+              type="button"
+              onClick={() => {
+                setMilestones((ms) => [...ms, { label: "", threshold: "", points: "25", key: nextKey }]);
+                setNextKey((k) => k + 1);
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            >
+              <Plus className="size-4" aria-hidden /> Add milestone
+            </button>
           )}
         </Card>
       </div>

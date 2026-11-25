@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/db";
 import type { ChallengeMetric } from "@/lib/domain";
 import { addDays, programToday } from "@/lib/dates";
-import { displayName, hasPersonalGoal, isDayScored, summarizeProgress } from "@/lib/challenges";
+import { displayName, hasPersonalGoal, isDayScored, milestoneSourceId, summarizeProgress } from "@/lib/challenges";
 import { awardPoints } from "./points";
 
 // How it works: activity entries and habit check-ins are the source of truth.
@@ -83,15 +83,37 @@ export async function recomputeProgress(userId: string, from: Date, to: Date) {
       ...(rows.length ? [db.challengeProgressDaily.createMany({ data: rows })] : []),
     ]);
   }
-  await settleCompletions(userId, enrollments.filter((e) => !e.completedAt).map((e) => e.challenge));
+  await settle(userId, enrollments);
 }
 
-/** Goal-based challenges complete the moment the goal is met; award their points once. */
-async function settleCompletions(userId: string, challenges: Challenge[]) {
-  for (const c of challenges) {
-    if (!hasPersonalGoal(c.type)) continue;
+/**
+ * Award what the member has earned so far: milestones (any type, once each) and,
+ * for goal-based challenges, completion the moment the goal is met.
+ */
+async function settle(userId: string, enrollments: { completedAt: Date | null; challenge: Challenge }[]) {
+  const milestones = await db.challengeMilestone.findMany({
+    where: { challengeId: { in: enrollments.map((e) => e.challenge.id) }, points: { gt: 0 } },
+  });
+  for (const { challenge: c, completedAt } of enrollments) {
+    const own = milestones.filter((m) => m.challengeId === c.id);
+    const needsCompletion = !completedAt && hasPersonalGoal(c.type);
+    if (!own.length && !needsCompletion) continue;
+
     const summary = await getMemberSummary(userId, c);
-    if (summary.complete) await markComplete(userId, c);
+    for (const m of own) {
+      const threshold = Number(m.threshold.toString());
+      if (summary.score < threshold) continue;
+      await awardPoints({
+        userId,
+        ruleSlug: "challenge",
+        sourceType: "milestone",
+        sourceId: milestoneSourceId(c.id, threshold),
+        description: `${c.name}: ${m.label}`.slice(0, 500),
+        on: programToday(),
+        points: m.points,
+      });
+    }
+    if (needsCompletion && summary.complete) await markComplete(userId, c);
   }
 }
 
@@ -172,6 +194,7 @@ export async function getLeaderboard(c: Challenge & { dailyGoal: { toString(): s
   return {
     top: all.slice(0, limit),
     me: all.find((r) => r.userId === userId) ?? null,
+    everyone: all,
     participants: all.length,
     groupTotal: all.reduce((s, r) => s + r.score, 0),
     teams: teamBoard,
@@ -186,4 +209,13 @@ export async function finalizeChallenge(challengeId: number) {
     for (const p of participants) await markComplete(p.userId, c);
   }
   await db.challenge.update({ where: { id: challengeId }, data: { status: "completed" } });
+}
+
+/** After an admin changes milestones or goals: award anything members have now earned. */
+export async function settleChallenge(challengeId: number) {
+  const enrollments = await db.challengeEnrollment.findMany({
+    where: { challengeId, challenge: { status: { notIn: ["draft", "archived", "completed"] } } },
+    include: { challenge: true },
+  });
+  for (const e of enrollments) await settle(e.userId, [e]);
 }

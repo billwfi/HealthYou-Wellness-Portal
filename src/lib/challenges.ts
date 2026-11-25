@@ -120,3 +120,49 @@ export function summarizeProgress(c: Scorable, rows: { day: Date; value: number 
     pct: goal && personal ? Math.min(1, score / goal) : null,
   };
 }
+
+// ── Eligibility ──────────────────────────────────────────────────────────────
+// Stored as JSON in challenges.eligibility. Empty or missing lists mean "anyone".
+
+export type Eligibility = { memberTypes?: string[]; departments?: string[] };
+
+export function parseEligibility(json: string | null | undefined): Eligibility {
+  if (!json) return {};
+  try {
+    const v = JSON.parse(json) as Eligibility;
+    return {
+      memberTypes: Array.isArray(v.memberTypes) ? v.memberTypes.filter((s) => typeof s === "string") : undefined,
+      departments: Array.isArray(v.departments) ? v.departments.filter((s) => typeof s === "string") : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+
+export function isEligible(e: Eligibility, member: { memberType?: string | null; department?: string | null }) {
+  if (e.memberTypes?.length && !e.memberTypes.includes(member.memberType ?? "")) return false;
+  if (e.departments?.length) {
+    const dept = norm(member.department ?? "");
+    if (!dept || !e.departments.some((d) => norm(d) === dept)) return false;
+  }
+  return true;
+}
+
+const MEMBER_TYPE_PLURAL: Record<string, string> = { employee: "City employees", spouse: "spouses and partners", retiree: "retirees" };
+
+/** "Open to City employees and retirees in Parks or Fire", or null when open to everyone. */
+export function describeEligibility(e: Eligibility) {
+  const parts: string[] = [];
+  if (e.memberTypes?.length) parts.push(e.memberTypes.map((t) => MEMBER_TYPE_PLURAL[t] ?? t).join(" and "));
+  if (e.departments?.length) parts.push(`${parts.length ? "in" : "members of"} ${e.departments.join(" or ")}`);
+  return parts.length ? `Open to ${parts.join(" ")}` : null;
+}
+
+// ── Milestones ───────────────────────────────────────────────────────────────
+
+/** Ledger key for a milestone: stable across edits, so re-saving never pays twice. */
+export function milestoneSourceId(challengeId: number, threshold: number) {
+  return `${challengeId}:${threshold}`;
+}

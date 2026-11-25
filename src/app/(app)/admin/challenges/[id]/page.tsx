@@ -5,6 +5,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { db } from "@/db";
 import { requireAdmin } from "@/lib/session";
 import type { ChallengeMetric, ChallengeType, TeamMode } from "@/lib/domain";
+import { parseEligibility } from "@/lib/challenges";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { ChallengeForm } from "../challenge-form";
@@ -19,8 +20,9 @@ export default async function EditChallengePage({ params }: { params: Promise<{ 
   await requireAdmin();
   const id = Number((await params).id);
   if (!Number.isInteger(id) || id <= 0) notFound();
-  const c = await db.challenge.findUnique({ where: { id }, include: { _count: { select: { enrollments: true } } } });
+  const c = await db.challenge.findUnique({ where: { id }, include: { _count: { select: { enrollments: true } }, milestones: { orderBy: { threshold: "asc" } } } });
   if (!c) notFound();
+  const elig = parseEligibility(c.eligibility);
   const locked = c.status === "completed" || c.status === "archived";
 
   return (
@@ -62,6 +64,9 @@ export default async function EditChallengePage({ params }: { params: Promise<{ 
             pointsOnCompletion: String(c.pointsOnCompletion),
             published: c.status !== "draft",
             templateId: c.templateId?.toString() ?? "",
+            milestones: c.milestones.map((m) => ({ label: m.label, threshold: m.threshold.toString(), points: String(m.points) })),
+            eligMemberTypes: elig.memberTypes ?? [],
+            eligDepartments: (elig.departments ?? []).join("\n"),
           }}
         />
       )}

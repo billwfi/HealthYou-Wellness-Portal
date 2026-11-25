@@ -6,12 +6,12 @@ import { z } from "zod";
 import { db } from "@/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requireAdmin } from "@/lib/session";
-import { CHALLENGE_METRICS, CHALLENGE_TYPES, TEAM_MODES } from "@/lib/domain";
+import { CHALLENGE_METRICS, CHALLENGE_TYPES, MEMBER_TYPES, TEAM_MODES } from "@/lib/domain";
 import { dateOnly, programToday } from "@/lib/dates";
 import { SLUG_PATTERN } from "@/lib/slug";
 import { CHALLENGE_TYPE_META, challengePhase, isDayScored, METRIC_META } from "@/lib/challenges";
 import { audit } from "@/server/audit";
-import { finalizeChallenge, recomputeProgress } from "@/server/challenges";
+import { finalizeChallenge, recomputeProgress, settleChallenge } from "@/server/challenges";
 
 export type ChallengeFormState = { error: string | null; fieldErrors: Partial<Record<string, string>> };
 
@@ -64,6 +64,51 @@ const ChallengeInput = z
   .refine((v) => !isDayScored(v.type) || v.goalValue == null || Number.isInteger(v.goalValue), { message: "Use a whole number of days.", path: ["goalValue"] })
   .refine((v) => v.dailyCap == null || v.dailyGoal == null || v.dailyCap >= v.dailyGoal, { message: "The daily cap can't be below the daily goal.", path: ["dailyCap"] });
 
+const MAX_MILESTONES = 10;
+
+type Milestone = { label: string; threshold: number; points: number };
+
+/** Milestone rows arrive as parallel lists; blank rows are ignored. */
+function parseMilestones(formData: FormData, dayScored: boolean): { milestones: Milestone[]; error?: string } {
+  const labels = formData.getAll("milestoneLabel").map(String);
+  const thresholds = formData.getAll("milestoneThreshold").map(String);
+  const points = formData.getAll("milestonePoints").map(String);
+  const milestones: Milestone[] = [];
+  for (let i = 0; i < labels.length; i++) {
+    const label = labels[i].trim();
+    const t = (thresholds[i] ?? "").trim();
+    const p = (points[i] ?? "").trim();
+    if (!label && !t && !p) continue;
+    const threshold = Number(t);
+    const pts = p === "" ? 0 : Number(p);
+    if (!label || label.length > 200) return { milestones, error: "Each milestone needs a name (up to 200 characters)." };
+    if (!t || !Number.isFinite(threshold) || threshold <= 0) return { milestones, error: `“${label}” needs an amount above zero.` };
+    if (dayScored && !Number.isInteger(threshold)) return { milestones, error: `“${label}” needs a whole number of days.` };
+    if (!Number.isInteger(pts) || pts < 0 || pts > 5000) return { milestones, error: `“${label}” points must be a whole number from 0 to 5,000.` };
+    milestones.push({ label, threshold, points: pts });
+  }
+  if (milestones.length > MAX_MILESTONES) return { milestones, error: `Up to ${MAX_MILESTONES} milestones.` };
+  if (new Set(milestones.map((m) => m.threshold)).size !== milestones.length) return { milestones, error: "Two milestones can't share the same amount." };
+  return { milestones: milestones.sort((a, b) => a.threshold - b.threshold) };
+}
+
+/** Member types are fixed values; departments are free text, one per line or comma-separated. */
+function parseEligibility(formData: FormData) {
+  const memberTypes = formData.getAll("eligMemberType").map(String).filter((t) => (MEMBER_TYPES as readonly string[]).includes(t));
+  const departments = [
+    ...new Set(
+      String(formData.get("eligDepartments") ?? "")
+        .split(/[,\n]/)
+        .map((d) => d.trim().replace(/\s+/g, " "))
+        .filter(Boolean)
+        .map((d) => d.slice(0, 200)),
+    ),
+  ].slice(0, 50);
+  // Every member type checked is the same as no restriction.
+  const types = memberTypes.length === MEMBER_TYPES.length ? [] : memberTypes;
+  return types.length || departments.length ? JSON.stringify({ memberTypes: types, departments }) : null;
+}
+
 /** Recalculate everyone's progress after a change to what counts. */
 async function recomputeAll(challengeId: number, start: Date, end: Date) {
   const today = programToday();
@@ -90,6 +135,8 @@ export async function saveChallenge(id: number | null, _prev: ChallengeFormState
     return { error: "Please fix the highlighted fields.", fieldErrors };
   }
   const { published, ...v } = parsed.data;
+  const { milestones, error: milestoneError } = parseMilestones(formData, isDayScored(v.type));
+  if (milestoneError) return { error: milestoneError, fieldErrors: { milestones: milestoneError } };
   const existing = id == null ? null : await db.challenge.findUnique({ where: { id } });
   if (id != null && !existing) return { error: "This challenge no longer exists.", fieldErrors: {} };
   if (existing && (existing.status === "completed" || existing.status === "archived")) {
@@ -103,6 +150,7 @@ export async function saveChallenge(id: number | null, _prev: ChallengeFormState
     dailyGoal: isDayScored(v.type) ? (v.dailyGoal ?? 1) : null,
     maxTeamSize: v.teamMode === "individual" ? null : v.maxTeamSize,
     status: published ? "scheduled" : "draft",
+    eligibility: parseEligibility(formData),
   };
 
   let saved;
@@ -111,6 +159,8 @@ export async function saveChallenge(id: number | null, _prev: ChallengeFormState
       const row = existing
         ? await tx.challenge.update({ where: { id: existing.id }, data })
         : await tx.challenge.create({ data: { ...data, createdBy: admin.id } });
+      await tx.challengeMilestone.deleteMany({ where: { challengeId: row.id } });
+      if (milestones.length) await tx.challengeMilestone.createMany({ data: milestones.map((m) => ({ ...m, challengeId: row.id })) });
       await audit(admin.id, existing ? "challenge.update" : "challenge.create", "challenge", row.id, { name: row.name, status: row.status }, tx);
       return row;
     });
@@ -127,7 +177,9 @@ export async function saveChallenge(id: number | null, _prev: ChallengeFormState
       existing.startDate.getTime() !== saved.startDate.getTime() ||
       existing.endDate.getTime() !== saved.endDate.getTime() ||
       String(existing.dailyCap ?? "") !== String(saved.dailyCap ?? ""));
+  // Recompute also settles; otherwise still award milestones or goals the edit made reachable.
   if (scoringChanged) await recomputeAll(saved.id, saved.startDate, saved.endDate);
+  else if (existing) await settleChallenge(saved.id);
 
   revalidatePath("/", "layout");
   redirect(`/admin/challenges?saved=${saved.id}`);

@@ -81,6 +81,13 @@ export default async function NewChallengePage({ searchParams }: { searchParams:
           pointsOnCompletion: "100",
           published: false,
           templateId: t ? String(t.id) : "",
+          milestones: t?.goalValue && !(t.type === "streak" || t.type === "stick_to_it")
+            ? [
+                { label: "Halfway there", threshold: String(Number(t.goalValue.toString()) / 2), points: "25" },
+              ]
+            : [],
+          eligMemberTypes: [],
+          eligDepartments: "",
         }}
       />
     </>
