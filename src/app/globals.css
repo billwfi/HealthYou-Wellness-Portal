@@ -98,6 +98,12 @@
   --color-path-life-soft: var(--path-life-soft);
   --color-path-mind: var(--path-mind);
   --color-path-mind-soft: var(--path-mind-soft);
+  /* Fixed brand colours from the logo's mountain (same in light and dark). */
+  --color-peak-navy: #0b1f4d;
+  --color-peak-green: #3f9a3c;
+  --color-peak-blue: #1e63b5;
+  --color-peak-red: #d32f2f;
+  --color-peak-orange: #f29a1d;
 
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
 
@@ -124,4 +130,9 @@ body {
 /* The legacy reference UI was designed for light mode only. */
 .legacy {
   color-scheme: light;
+}
+
+/* The logo's mountain colours as a thin stripe under photo banners. */
+.peak-stripe {
+  background: linear-gradient(90deg, var(--color-peak-green) 0 25%, var(--color-peak-blue) 25% 50%, var(--color-peak-red) 50% 75%, var(--color-peak-orange) 75% 100%);
 }

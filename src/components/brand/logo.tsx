@@ -1,22 +1,17 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/brand/reach-your-peak.png";
 
-/** Reach Your Peak wordmark with a simple peak glyph. */
-export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
+/**
+ * The official Colorado Springs Reach Your Peak logo (164×98 source, so keep it
+ * at 56px tall or less to stay sharp on high-density screens). Its lettering is
+ * dark, so in dark mode it sits on a white tile.
+ */
+export function Logo({ className, size = "md" }: { className?: string; size?: "sm" | "md" | "lg" }) {
+  const h = { sm: 36, md: 44, lg: 56 }[size];
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
-        <rect width="32" height="32" rx="9" className="fill-primary" />
-        <path d="M5 24 13 11l4 6 3-4 7 11Z" fill="white" />
-        <path d="m13 11 2.2 3.4L13 13.6l-1.6 1.8Z" className="fill-accent" />
-      </svg>
-      {!compact && (
-        <span className="leading-none">
-          <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-ink-muted">Colorado Springs</span>
-          <span className="block text-[15px] font-extrabold tracking-tight text-ink">
-            Reach Your <span className="text-accent">Peak</span>
-          </span>
-        </span>
-      )}
+    <span className={cn("inline-flex dark:rounded-lg dark:bg-white dark:px-1.5 dark:py-1", className)}>
+      <Image src={logo} alt="Colorado Springs Reach Your Peak" height={h} style={{ width: "auto", height: h }} priority />
     </span>
   );
 }

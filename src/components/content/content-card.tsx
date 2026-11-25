@@ -10,6 +10,9 @@ import { contentTypeMeta } from "./content-meta";
 
 type Item = { id: number; slug: string; title: string; summary: string | null; type: string; path: string; provider: string | null };
 
+// Colored top edge per path (static class names so Tailwind can see them).
+const EDGE: Record<string, string> = { body: "border-t-path-body", life: "border-t-path-life", mind: "border-t-path-mind" };
+
 const iconButton =
   "grid size-9 place-items-center rounded-full text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink";
 
@@ -30,7 +33,7 @@ export function ContentCard({
   const path = item.path as WellnessPath;
   const { label, icon: Icon } = contentTypeMeta(item.type);
   return (
-    <Card className="flex h-full flex-col p-5">
+    <Card className={`flex h-full flex-col border-t-4 p-5 ${EDGE[item.path] ?? ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={path}>{PATHS[path]?.label ?? path}</Badge>

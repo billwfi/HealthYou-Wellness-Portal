@@ -27,7 +27,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-dvh flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
         <Link href="/" className="px-2">
-          <Logo />
+          <Logo size="lg" />
         </Link>
         <div className="mt-8 flex-1">
           <SidebarNav />
@@ -55,7 +55,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: ReactN
       {/* Mobile top bar */}
       <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 backdrop-blur lg:hidden">
         <Link href="/">
-          <Logo />
+          <Logo size="sm" />
         </Link>
         <Link href="/profile" aria-label="Your profile">
           <Avatar user={user} />
