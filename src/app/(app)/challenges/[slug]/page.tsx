@@ -27,6 +27,8 @@ import { FormError } from "@/components/auth/field";
 import { ActionButton } from "@/components/content/action-button";
 import { phaseLabel, scoreText } from "@/components/challenges/challenge-card";
 import { CopyLinkButton } from "@/components/ui/copy-button";
+import { PageBanner } from "@/components/brand/page-banner";
+import { challengePhoto } from "@/components/brand/photos";
 import { joinChallenge, leaveChallenge, makeCaptain, removeTeamMember, renameTeam } from "../actions";
 
 type Params = Promise<{ slug: string }>;
@@ -131,18 +133,21 @@ export default async function ChallengePage({ params, searchParams }: { params: 
         <ArrowLeft className="size-4" aria-hidden /> Challenges
       </Link>
 
-      <header>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="primary">{typeMeta?.label ?? c.type}</Badge>
-          <Badge>{phaseLabel(phase, c.startDate, c.endDate, today)}</Badge>
-          {phase === "draft" && <Badge tone="warning">Only admins can see this</Badge>}
-        </div>
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{c.name}</h1>
-        <p className="mt-1 text-ink-muted">
+      <PageBanner
+        photo={challengePhoto(c.metric)}
+        eyebrow={`${typeMeta?.label ?? c.type} challenge · ${phaseLabel(phase, c.startDate, c.endDate, today)}`}
+        title={c.name}
+        description={
+          <>
+            <p>
           {fmtDay(c.startDate)} – {fmtDay(c.endDate)} · {board.participants} {board.participants === 1 ? "participant" : "participants"}
-        </p>
-        {c.description && <p className="mt-3 max-w-3xl text-ink">{c.description}</p>}
-      </header>
+            </p>
+            {phase === "draft" && <p className="mt-2 inline-flex rounded-full bg-peak-orange px-2.5 py-0.5 text-xs font-bold text-white">Draft: only admins can see this</p>}
+          </>
+        }
+        className="mb-0"
+      />
+      {c.description && <p className="max-w-3xl text-ink">{c.description}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="space-y-6">

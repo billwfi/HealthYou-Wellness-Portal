@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bookmark, BookmarkCheck, CheckCircle2, Clock, ExternalLink } from "lucide-react";
@@ -12,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { buttonClasses } from "@/components/ui/button";
 import { ActionButton } from "@/components/content/action-button";
 import { contentTypeMeta } from "@/components/content/content-meta";
+import { contentPhoto } from "@/components/brand/photos";
 
 type Params = Promise<{ slug: string }>;
 
@@ -37,12 +39,18 @@ export default async function ContentPage({ params }: { params: Params }) {
   const { label, icon: Icon } = contentTypeMeta(item.type);
   const saved = Boolean(interaction?.savedAt);
   const completed = Boolean(interaction?.completedAt);
+  const photo = contentPhoto(item);
 
   return (
     <article className="mx-auto max-w-3xl">
       <Link href={`/explore?path=${path}`} className="inline-flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-primary">
         <ArrowLeft className="size-4" aria-hidden /> {PATHS[path]?.label ?? "Explore"}
       </Link>
+
+      <div className="relative mt-4 h-48 overflow-hidden rounded-3xl shadow-card sm:h-64">
+        <Image src={photo.src} alt={photo.alt} fill priority placeholder="blur" sizes="(min-width: 768px) 768px, 100vw" className="object-cover" style={{ objectPosition: photo.position ?? "center" }} />
+        <div className="peak-stripe absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
+      </div>
 
       <header className="mt-4">
         <div className="flex flex-wrap items-center gap-2">

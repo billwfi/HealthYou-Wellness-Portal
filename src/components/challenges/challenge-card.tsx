@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Flame, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { CHALLENGE_TYPE_META, daysBetweenInclusive, formatAmount, isDayScored, METRIC_META, type ChallengePhase } from "@/lib/challenges";
 import type { ChallengeMetric, ChallengeType } from "@/lib/domain";
 import type { ChallengeListItem } from "@/server/challenge-list";
+import { challengePhoto } from "@/components/brand/photos";
 
 const fmtDay = (d: Date) => new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(d);
 
@@ -33,10 +35,17 @@ export function ChallengeCard({ item, today }: { item: ChallengeListItem; today:
   const typeMeta = CHALLENGE_TYPE_META[c.type as ChallengeType];
   const metric = METRIC_META[c.metric as ChallengeMetric];
   const goal = summary?.goal;
+  const photo = challengePhoto(c.metric);
 
   return (
     <Link href={`/challenges/${c.slug}`} className="group block h-full">
-      <Card className="flex h-full flex-col p-5 transition-shadow group-hover:shadow-pop">
+      <Card className="flex h-full flex-col overflow-hidden transition-shadow group-hover:shadow-pop">
+        <div className="relative h-28 shrink-0 overflow-hidden">
+          <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-linear-to-t from-peak-navy/60 to-transparent" aria-hidden />
+        </div>
+        <div className="peak-stripe h-1 shrink-0" aria-hidden />
+        <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="primary">{typeMeta?.label ?? c.type}</Badge>
           <span className="text-xs font-semibold text-ink-muted">{metric?.label ?? c.metric}</span>
@@ -74,6 +83,7 @@ export function ChallengeCard({ item, today }: { item: ChallengeListItem; today:
           <span className="inline-flex items-center gap-1">
             <Users className="size-3.5" aria-hidden /> {participants}
           </span>
+        </div>
         </div>
       </Card>
     </Link>

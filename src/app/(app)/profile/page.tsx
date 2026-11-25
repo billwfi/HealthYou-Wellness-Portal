@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/session";
 import { getMemberContext } from "@/server/member";
 import { WELLNESS_PATHS, type MemberType } from "@/lib/domain";
 import { PATHS } from "@/lib/utils";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS } from "@/components/brand/photos";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -35,11 +36,11 @@ export default async function ProfilePage() {
 
   return (
     <>
-      <PageHeader
+      <PageBanner photo={BANNERS.profile}
         eyebrow="Profile"
         title={user.name}
         description={[user.email, memberType && MEMBER_TYPE_LABELS[memberType], member.profile?.department].filter(Boolean).join(" · ")}
-        action={<SignOutButton />}
+        action={<SignOutButton className="bg-white/15 text-white backdrop-blur hover:bg-white/25 hover:text-white" />}
       />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

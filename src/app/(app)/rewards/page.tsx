@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { getPointsSummary } from "@/server/points";
 import { currentPlanYear } from "@/lib/utils";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS } from "@/components/brand/photos";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,7 @@ export default async function RewardsPage() {
 
   return (
     <>
-      <PageHeader
+      <PageBanner photo={BANNERS.rewards}
         eyebrow="Rewards"
         title={`${total.toLocaleString()} points earned in ${planYear}`}
         description="Rewards are based on participation — you earn points for taking part, not for your health results."

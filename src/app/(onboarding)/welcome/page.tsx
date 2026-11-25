@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { BANNERS } from "@/components/brand/photos";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { getMemberContext } from "@/server/member";
@@ -19,7 +21,12 @@ export default async function WelcomePage() {
   const goals = Object.fromEntries(WELLNESS_PATHS.map((p) => [p, member.goals[p] ?? ""])) as Record<WellnessPath, string>;
 
   return (
-    <OnboardingForm
+    <>
+      <div className="relative mb-8 h-36 overflow-hidden rounded-3xl shadow-card sm:h-44">
+        <Image src={BANNERS.welcome.src} alt="" fill priority placeholder="blur" sizes="(min-width: 768px) 768px, 100vw" className="object-cover" style={{ objectPosition: BANNERS.welcome.position }} />
+        <div className="peak-stripe absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
+      </div>
+      <OnboardingForm
       firstName={user.firstName || user.name.split(" ")[0]}
       editing={member.onboarded}
       tags={tags.map((t) => ({ ...t, path: t.path as WellnessPath }))}
@@ -32,5 +39,6 @@ export default async function WelcomePage() {
         habitIds: userHabits.map((h) => h.habitId),
       }}
     />
+    </>
   );
 }

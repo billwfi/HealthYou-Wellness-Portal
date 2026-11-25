@@ -3,7 +3,8 @@ import { CalendarDays } from "lucide-react";
 import { requireUser } from "@/lib/session";
 import { programToday } from "@/lib/dates";
 import { getUpcomingEvents } from "@/server/events";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS } from "@/components/brand/photos";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { EventRow } from "@/components/events/event-row";
@@ -24,7 +25,7 @@ export default async function EventsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Events" title="Upcoming events" description="Webinars, workshops and classes from Reach Your Peak and its partners. All times are Mountain Time." />
+      <PageBanner photo={BANNERS.events} eyebrow="Events" title="Upcoming events" description="Webinars, workshops and classes from Reach Your Peak and its partners. All times are Mountain Time." />
       {events.length ? (
         <div className="space-y-8">
           {[...months].map(([month, list], i) => (

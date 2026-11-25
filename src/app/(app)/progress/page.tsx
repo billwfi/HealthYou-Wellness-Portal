@@ -4,7 +4,8 @@ import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { addDays, programDay, programToday } from "@/lib/dates";
 import { ACTIVITY_BACKFILL_DAYS } from "@/lib/challenges";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS } from "@/components/brand/photos";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ActionButton } from "@/components/content/action-button";
@@ -62,7 +63,7 @@ export default async function ProgressPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Progress" title="Your activity" description="Log exercise and nutrition. It counts toward points and any challenges you've joined." />
+      <PageBanner photo={BANNERS.progress} eyebrow="Progress" title="Your activity" description="Log exercise and nutrition. It counts toward points and any challenges you've joined." />
 
       <section aria-labelledby="week-heading">
         <h2 id="week-heading" className="sr-only">

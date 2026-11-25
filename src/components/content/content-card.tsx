@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Bookmark, BookmarkCheck, CheckCircle2, Sparkles, X } from "lucide-react";
 import { dismissContent, toggleSaveContent } from "@/app/(app)/actions";
@@ -7,11 +8,12 @@ import type { WellnessPath } from "@/lib/domain";
 import { PATHS } from "@/lib/utils";
 import { ActionButton } from "./action-button";
 import { contentTypeMeta } from "./content-meta";
+import { contentPhoto } from "@/components/brand/photos";
 
 type Item = { id: number; slug: string; title: string; summary: string | null; type: string; path: string; provider: string | null };
 
-// Colored top edge per path (static class names so Tailwind can see them).
-const EDGE: Record<string, string> = { body: "border-t-path-body", life: "border-t-path-life", mind: "border-t-path-mind" };
+// Colored edge under the photo, per path (static class names so Tailwind can see them).
+const EDGE: Record<string, string> = { body: "bg-path-body", life: "bg-path-life", mind: "bg-path-mind" };
 
 const iconButton =
   "grid size-9 place-items-center rounded-full text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink";
@@ -32,8 +34,14 @@ export function ContentCard({
 }) {
   const path = item.path as WellnessPath;
   const { label, icon: Icon } = contentTypeMeta(item.type);
+  const photo = contentPhoto(item);
   return (
-    <Card className={`flex h-full flex-col border-t-4 p-5 ${EDGE[item.path] ?? ""}`}>
+    <Card className="flex h-full flex-col overflow-hidden">
+      <Link href={`/explore/${item.slug}`} tabIndex={-1} aria-hidden className="relative block h-32 shrink-0 overflow-hidden">
+        <Image src={photo.src} alt="" fill placeholder="blur" sizes="(min-width: 1280px) 280px, (min-width: 640px) 50vw, 100vw" className="object-cover transition-transform duration-500 hover:scale-105" style={{ objectPosition: photo.position ?? "center" }} />
+      </Link>
+      <div className={`h-1 shrink-0 ${EDGE[item.path] ?? "bg-primary"}`} aria-hidden />
+      <div className="flex flex-1 flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={path}>{PATHS[path]?.label ?? path}</Badge>
@@ -72,6 +80,7 @@ export function ContentCard({
           </p>
         )}
         {!reason && item.provider && <p className="text-xs text-ink-subtle">From {item.provider}</p>}
+      </div>
       </div>
     </Card>
   );

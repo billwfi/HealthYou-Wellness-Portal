@@ -6,7 +6,8 @@ import { requireUser } from "@/lib/session";
 import { getMemberContext } from "@/server/member";
 import { WELLNESS_PATHS, type WellnessPath } from "@/lib/domain";
 import { cn, PATHS } from "@/lib/utils";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS, PATH_PHOTOS } from "@/components/brand/photos";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ContentCard } from "@/components/content/content-card";
@@ -63,7 +64,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Sear
 
   return (
     <>
-      <PageHeader
+      <PageBanner photo={path ? PATH_PHOTOS[path] : BANNERS.explore}
         eyebrow="Explore"
         title={path ? `${PATHS[path].label}` : "Body, Life & Mind"}
         description={path ? PATHS[path].tagline : "Programs, coaching and resources across the three Reach Your Peak paths."}

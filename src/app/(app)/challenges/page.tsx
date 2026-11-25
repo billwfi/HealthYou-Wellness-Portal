@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/session";
 import { programToday } from "@/lib/dates";
 import { isJoinable } from "@/lib/challenges";
 import { getChallengesForMember } from "@/server/challenge-list";
-import { PageHeader } from "@/components/ui/page-header";
+import { PageBanner } from "@/components/brand/page-banner";
+import { BANNERS } from "@/components/brand/photos";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChallengeCard } from "@/components/challenges/challenge-card";
@@ -28,7 +29,7 @@ export default async function ChallengesPage() {
 
   return (
     <>
-      <PageHeader
+      <PageBanner photo={BANNERS.challenges}
         eyebrow="Challenges"
         title="Compete, connect, climb"
         description="Join on your own or with a team. Activity you log on the Progress page counts automatically."
