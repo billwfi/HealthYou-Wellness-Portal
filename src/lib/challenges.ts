@@ -70,7 +70,22 @@ export function daysBetweenInclusive(a: Date, b: Date) {
 }
 
 /** How far back members can log activity themselves. */
-export const ACTIVITY_BACKFILL_DAYS = 7;
+export const ACTIVITY_BACKFILL_DAYS = 3;
+
+/** How far back a synced device can send a day's total. */
+export const SYNC_BACKFILL_DAYS = 7;
+
+/** Most a member can type in for one day, per metric, across all their entries. */
+export const MANUAL_DAILY_LIMIT: Record<string, number> = {
+  steps: 40_000,
+  active_minutes: 300,
+  distance_miles: 30,
+  servings: 30,
+  count: 20,
+};
+
+/** Most steps a synced device can report for one day. */
+export const SYNC_STEPS_MAX = 100_000;
 
 const GOAL_TYPES = new Set(["target", "race", "streak", "stick_to_it"]);
 

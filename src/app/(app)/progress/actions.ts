@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { addDays, dateOnly, programToday } from "@/lib/dates";
-import { ACTIVITY_BACKFILL_DAYS as BACKFILL_DAYS, METRIC_META } from "@/lib/challenges";
+import { ACTIVITY_BACKFILL_DAYS as BACKFILL_DAYS, MANUAL_DAILY_LIMIT, METRIC_META } from "@/lib/challenges";
 import type { ChallengeMetric } from "@/lib/domain";
 import { awardPoints } from "@/server/points";
 import { recomputeProgress } from "@/server/challenges";
@@ -41,9 +41,34 @@ export async function logActivity(_prev: LogState, formData: FormData): Promise<
 
   const type = await db.activityType.findFirst({ where: { id: activityTypeId, isActive: true } });
   if (!type) return { error: "Choose an activity.", ok: null };
-  const max = METRIC_META[type.metric as ChallengeMetric]?.dailyMax ?? 10_000;
-  if (value > max) return { error: `That's more than ${max.toLocaleString()} ${type.unit} in a day. Check the amount.`, ok: null };
   const amount = type.metric === "distance_miles" ? Math.round(value * 100) / 100 : Math.round(value);
+  if (amount <= 0) return { error: "Enter an amount above zero.", ok: null };
+
+  if (type.metric === "steps") {
+    const synced = await db.activityEntry.findFirst({
+      where: { userId: user.id, entryDate: day, source: "device", activityType: { metric: "steps" } },
+      select: { id: true },
+    });
+    if (synced) return { error: "Steps for that day come from your iPhone sync, so they can't be typed in too.", ok: null };
+  }
+
+  // The limit covers the whole day, not each entry, so it can't be beaten by splitting.
+  const max = MANUAL_DAILY_LIMIT[type.metric] ?? METRIC_META[type.metric as ChallengeMetric]?.dailyMax ?? 10_000;
+  const { _sum } = await db.activityEntry.aggregate({
+    where: { userId: user.id, entryDate: day, source: "manual", activityType: { metric: type.metric } },
+    _sum: { value: true },
+  });
+  const already = Number(_sum.value?.toString() ?? 0);
+  if (already + amount > max) {
+    const left = Math.max(0, max - already);
+    return {
+      error:
+        already > 0
+          ? `You can log up to ${max.toLocaleString()} ${type.unit} a day and have ${already.toLocaleString()} already, so ${left.toLocaleString()} more at most.`
+          : `You can log up to ${max.toLocaleString()} ${type.unit} a day. Check the amount.`,
+      ok: null,
+    };
+  }
 
   const entry = await db.activityEntry.create({
     data: { userId: user.id, activityTypeId: type.id, entryDate: day, value: amount, source: "manual", notes: notes || null },

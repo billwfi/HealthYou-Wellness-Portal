@@ -377,11 +377,17 @@ model DeviceConnection {
   status         String    @default("connected") @db.NVarChar(20)
   lastSyncedAt   DateTime? @map("last_synced_at")
   lastError      String?   @map("last_error") @db.NVarChar(1000)
+  /// SHA-256 of the member's personal sync key (iPhone Shortcut sync)
+  tokenHash      String?   @map("token_hash") @db.NVarChar(64)
+  /// last synced value and day, shown back to the member
+  lastValue      Int?      @map("last_value")
+  lastDay        DateTime? @map("last_day") @db.Date
   createdAt      DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([userId, provider])
+  @@index([tokenHash])
   @@map("device_connections")
 }
 
