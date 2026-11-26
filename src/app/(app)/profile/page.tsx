@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Target } from "lucide-react";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
@@ -13,8 +14,25 @@ import { ButtonLink } from "@/components/ui/button";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 import { NotificationSettings } from "@/components/pwa/notification-settings";
 import { vapidPublicKey } from "@/server/push";
+import { StepSyncSettings } from "@/components/devices/step-sync-settings";
+import { SHORTCUT_PROVIDER } from "@/server/step-sync";
+import { PROGRAM_TIME_ZONE } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Profile" };
+
+async function syncUrl() {
+  const base = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");
+  if (base) return `${base}/api/sync/steps`;
+  const h = await headers();
+  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}/api/sync/steps`;
+}
+
+function lastSyncLabel(c: { lastSyncedAt: Date | null; lastValue: number | null; lastDay: Date | null } | null) {
+  if (!c?.lastSyncedAt || c.lastValue == null || !c.lastDay) return null;
+  const day = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(c.lastDay);
+  const at = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: PROGRAM_TIME_ZONE }).format(c.lastSyncedAt);
+  return `${c.lastValue.toLocaleString()} steps for ${day}, sent ${at}`;
+}
 
 const MEMBER_TYPE_LABELS: Record<MemberType, string> = {
   employee: "City employee",
@@ -30,9 +48,10 @@ const editLink = (what: string) => (
 
 export default async function ProfilePage() {
   const user = await requireUser();
-  const [member, habits] = await Promise.all([
+  const [member, habits, stepSync] = await Promise.all([
     getMemberContext(user.id),
     db.userHabit.findMany({ where: { userId: user.id, active: true }, include: { habit: true }, orderBy: { startedAt: "asc" } }),
+    db.deviceConnection.findUnique({ where: { userId_provider: { userId: user.id, provider: SHORTCUT_PROVIDER } } }),
   ]);
   const memberType = member.profile?.memberType as MemberType | undefined;
 
@@ -118,9 +137,11 @@ export default async function ProfilePage() {
             </CardBody>
           </Card>
 
-          <Card>
-            <CardHeader title="Connected devices" action={<Badge tone="primary">Coming soon</Badge>} />
-            <CardBody className="text-sm text-ink-muted">Apple Health, Health Connect, Fitbit, Garmin and more.</CardBody>
+          <Card id="steps" className="scroll-mt-24">
+            <CardHeader title="Step sync" description="Fitbit, Garmin and Android are coming later" />
+            <CardBody>
+              <StepSyncSettings syncUrl={await syncUrl()} connected={Boolean(stepSync)} lastSync={lastSyncLabel(stepSync)} />
+            </CardBody>
           </Card>
         </div>
       </div>

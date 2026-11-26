@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
 import { notify } from "@/server/push";
+import { hashSyncKey, newSyncKey, SHORTCUT_PROVIDER } from "@/server/step-sync";
 
 type BrowserSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
 
@@ -49,4 +50,27 @@ export async function saveNotificationPrefs(formData: FormData) {
   const data = { notifyReminders: formData.get("reminders") === "on", notifyNews: formData.get("news") === "on" };
   await db.memberProfile.upsert({ where: { userId: user.id }, create: { userId: user.id, ...data }, update: data });
   revalidatePath("/profile");
+}
+
+// ── iPhone step sync ─────────────────────────────────────────────────────────
+
+/** Create (or replace) the member's personal sync key. The key is returned once and only its hash is kept. */
+export async function createStepSyncKey() {
+  const user = await requireUser();
+  const key = newSyncKey();
+  await db.deviceConnection.upsert({
+    where: { userId_provider: { userId: user.id, provider: SHORTCUT_PROVIDER } },
+    create: { userId: user.id, provider: SHORTCUT_PROVIDER, tokenHash: hashSyncKey(key), status: "connected" },
+    update: { tokenHash: hashSyncKey(key), status: "connected", lastError: null },
+  });
+  revalidatePath("/profile");
+  return { key };
+}
+
+/** Stop syncing. Steps already synced stay. */
+export async function turnOffStepSync() {
+  const user = await requireUser();
+  await db.deviceConnection.deleteMany({ where: { userId: user.id, provider: SHORTCUT_PROVIDER } });
+  revalidatePath("/profile");
+  revalidatePath("/progress");
 }
