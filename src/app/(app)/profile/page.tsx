@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Target } from "lucide-react";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
@@ -17,15 +16,10 @@ import { vapidPublicKey } from "@/server/push";
 import { StepSyncSettings } from "@/components/devices/step-sync-settings";
 import { SHORTCUT_PROVIDER } from "@/server/step-sync";
 import { PROGRAM_TIME_ZONE } from "@/lib/dates";
+import { qrDataUri, siteOrigin } from "@/server/qr";
+import { SETUP_PATH } from "@/lib/step-sync";
 
 export const metadata: Metadata = { title: "Profile" };
-
-async function syncUrl() {
-  const base = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");
-  if (base) return `${base}/api/sync/steps`;
-  const h = await headers();
-  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}/api/sync/steps`;
-}
 
 function lastSyncLabel(c: { lastSyncedAt: Date | null; lastValue: number | null; lastDay: Date | null } | null) {
   if (!c?.lastSyncedAt || c.lastValue == null || !c.lastDay) return null;
@@ -140,7 +134,7 @@ export default async function ProfilePage() {
           <Card id="steps" className="scroll-mt-24">
             <CardHeader title="Step sync" description="Fitbit, Garmin and Android are coming later" />
             <CardBody>
-              <StepSyncSettings syncUrl={await syncUrl()} connected={Boolean(stepSync)} lastSync={lastSyncLabel(stepSync)} />
+              <StepSyncSettings connected={Boolean(stepSync)} lastSync={lastSyncLabel(stepSync)} qr={await qrDataUri(`${await siteOrigin()}${SETUP_PATH}`)} />
             </CardBody>
           </Card>
         </div>

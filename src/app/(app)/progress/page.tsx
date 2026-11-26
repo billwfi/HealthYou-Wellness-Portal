@@ -105,7 +105,7 @@ export default async function ProgressPage() {
               ) : (
                 <>
                   On iPhone?{" "}
-                  <Link href="/profile#steps" className="font-semibold text-primary hover:underline">
+                  <Link href="/connect/steps" className="font-semibold text-primary hover:underline">
                     Sync your steps from Apple Health
                   </Link>
                   .
