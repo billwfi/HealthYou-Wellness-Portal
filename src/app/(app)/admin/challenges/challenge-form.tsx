@@ -1,0 +1,324 @@
+"use client";
+
+import Link from "next/link";
+import { startTransition, useActionState, useRef, useState, useTransition, type ReactNode } from "react";
+import { Archive, Plus, Trash2, X } from "lucide-react";
+import { Button, buttonClasses } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { FormError } from "@/components/auth/field";
+import { control, FieldShell, invalidProps } from "@/components/admin/form-fields";
+import { CHALLENGE_METRICS, CHALLENGE_TYPES, MEMBER_TYPES, TEAM_MODES, type ChallengeMetric, type ChallengeType, type TeamMode } from "@/lib/domain";
+import { CHALLENGE_TYPE_META, isDayScored, METRIC_META, TEAM_MODE_META } from "@/lib/challenges";
+import { slugify } from "@/lib/slug";
+import { cn } from "@/lib/utils";
+import { removeChallenge, type ChallengeFormState } from "./actions";
+import { useFocusFirstInvalid } from "@/components/admin/use-focus-invalid";
+
+export type ChallengeFormValues = {
+  name: string;
+  slug: string;
+  description: string;
+  type: ChallengeType;
+  metric: ChallengeMetric;
+  goalValue: string;
+  dailyGoal: string;
+  dailyCap: string;
+  startDate: string;
+  endDate: string;
+  teamMode: TeamMode;
+  maxTeamSize: string;
+  pointsOnCompletion: string;
+  published: boolean;
+  templateId: string;
+  milestones: { label: string; threshold: string; points: string }[];
+  eligMemberTypes: string[];
+  eligDepartments: string;
+};
+
+function Radio<T extends string>({ name, value, checked, onChange, title, hint }: { name: string; value: T; checked: boolean; onChange: (v: T) => void; title: string; hint: string }) {
+  return (
+    <label className="cursor-pointer">
+      <input type="radio" name={name} value={value} checked={checked} onChange={() => onChange(value)} className="peer sr-only" />
+      <span className="block h-full rounded-xl border border-input-border p-3 transition-colors hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+        <span className="block text-sm font-bold text-ink">{title}</span>
+        <span className="mt-0.5 block text-xs text-ink-muted">{hint}</span>
+      </span>
+    </label>
+  );
+}
+
+export function ChallengeForm({
+  action,
+  initial,
+  challengeId,
+  enrollments = 0,
+  header,
+}: {
+  action: (prev: ChallengeFormState, formData: FormData) => Promise<ChallengeFormState>;
+  initial: ChallengeFormValues;
+  challengeId?: number;
+  enrollments?: number;
+  header?: ReactNode;
+}) {
+  const [state, formAction, pending] = useActionState(action, { error: null, fieldErrors: {} });
+  const [removing, startRemove] = useTransition();
+  const [name, setName] = useState(initial.name);
+  const [slug, setSlug] = useState(initial.slug);
+  const [slugTouched, setSlugTouched] = useState(Boolean(challengeId));
+  const [type, setType] = useState(initial.type);
+  const [metric, setMetric] = useState(initial.metric);
+  const [teamMode, setTeamMode] = useState(initial.teamMode);
+  const [published, setPublished] = useState(initial.published);
+  const [milestones, setMilestones] = useState(() => initial.milestones.map((m, i) => ({ ...m, key: i })));
+  const addMilestoneRef = useRef<HTMLButtonElement>(null);
+  const [nextKey, setNextKey] = useState(initial.milestones.length);
+  const fe = state.fieldErrors;
+  const formRef = useFocusFirstInvalid(state);
+  const typeMeta = CHALLENGE_TYPE_META[type];
+  const unit = METRIC_META[metric].unit;
+  const field = (id: keyof ChallengeFormValues) => ({ id, name: id, defaultValue: initial[id] as string, ...invalidProps(id, fe[id]) });
+  const scoreUnit = isDayScored(type) ? "days" : unit;
+
+  return (
+    <form
+      ref={formRef}
+      // Manual submit keeps the admin's input when validation fails (React resets forms after `action`).
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => formAction(data));
+      }}
+      noValidate
+      className="grid gap-6 lg:grid-cols-[1fr_320px]"
+    >
+      <input type="hidden" name="templateId" value={initial.templateId} />
+      <div className="space-y-6">
+        {header}
+        <Card className="space-y-5 p-5">
+          <FieldShell id="name" label="Name" error={fe.name}>
+            <input
+              id="name"
+              name="name"
+              value={name}
+              maxLength={200}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!slugTouched) setSlug(slugify(e.target.value));
+              }}
+              className={cn(control, "h-11")}
+              {...invalidProps("name", fe.name)}
+            />
+          </FieldShell>
+          <FieldShell id="slug" label="Web address" error={fe.slug} hint={`/challenges/${slug || "…"}`}>
+            <input
+              id="slug"
+              name="slug"
+              value={slug}
+              maxLength={150}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlug(e.target.value.toLowerCase());
+              }}
+              className={cn(control, "h-11 font-mono text-sm")}
+              {...invalidProps("slug", fe.slug)}
+            />
+          </FieldShell>
+          <FieldShell id="description" label="Description" optional error={fe.description}>
+            <textarea {...field("description")} rows={3} maxLength={1000} className={cn(control, "py-2.5")} />
+          </FieldShell>
+        </Card>
+
+        <Card className="space-y-5 p-5">
+          <fieldset>
+            <legend className="text-sm font-semibold text-ink">Type</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {CHALLENGE_TYPES.map((t) => (
+                <Radio key={t} name="type" value={t} checked={type === t} onChange={setType} title={CHALLENGE_TYPE_META[t].label} hint={CHALLENGE_TYPE_META[t].summary} />
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FieldShell id="metric" label="What counts" error={fe.metric} hint={METRIC_META[metric].hint}>
+              <select id="metric" name="metric" value={metric} onChange={(e) => setMetric(e.target.value as ChallengeMetric)} className={cn(control, "h-11")}>
+                {CHALLENGE_METRICS.map((m) => (
+                  <option key={m} value={m}>
+                    {METRIC_META[m].label}
+                  </option>
+                ))}
+              </select>
+            </FieldShell>
+            {typeMeta.goal === "required" && (
+              <FieldShell id="goalValue" label={typeMeta.goalLabel ?? "Goal"} error={fe.goalValue} hint={isDayScored(type) ? "days" : unit}>
+                <input {...field("goalValue")} type="number" min={0} step="any" inputMode="decimal" className={cn(control, "h-11")} />
+              </FieldShell>
+            )}
+            {isDayScored(type) && (
+              <FieldShell id="dailyGoal" label="Daily goal" error={fe.dailyGoal} hint={`${unit} needed for a day to count (default 1)`}>
+                <input {...field("dailyGoal")} type="number" min={0} step="any" inputMode="decimal" className={cn(control, "h-11")} />
+              </FieldShell>
+            )}
+            <FieldShell id="dailyCap" label="Daily cap" optional error={fe.dailyCap} hint={`Most ${unit} that count per day. Keeps it fair.`}>
+              <input {...field("dailyCap")} type="number" min={0} step="any" inputMode="decimal" className={cn(control, "h-11")} />
+            </FieldShell>
+          </div>
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <fieldset>
+            <legend className="text-sm font-semibold text-ink">Who can join</legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+              {TEAM_MODES.map((m) => (
+                <Radio key={m} name="teamMode" value={m} checked={teamMode === m} onChange={setTeamMode} title={TEAM_MODE_META[m].label} hint={TEAM_MODE_META[m].summary} />
+              ))}
+            </div>
+          </fieldset>
+          {teamMode !== "individual" && (
+            <div className="max-w-48">
+              <FieldShell id="maxTeamSize" label="Max team size" optional error={fe.maxTeamSize}>
+                <input {...field("maxTeamSize")} type="number" min={2} inputMode="numeric" className={cn(control, "h-11")} />
+              </FieldShell>
+            </div>
+          )}
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Who&apos;s eligible</h2>
+            <p className="text-xs text-ink-muted">Leave everything blank to open it to all members. Members who don&apos;t match won&apos;t see it.</p>
+          </div>
+          <fieldset>
+            <legend className="text-xs font-semibold text-ink-muted">Member types</legend>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {MEMBER_TYPES.map((t) => (
+                <label key={t} className="cursor-pointer">
+                  <input type="checkbox" name="eligMemberType" value={t} defaultChecked={initial.eligMemberTypes.includes(t)} className="peer sr-only" />
+                  <span className="inline-flex rounded-full border border-input-border px-3 py-1.5 text-sm font-medium text-ink-muted hover:bg-surface-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                    {{ employee: "Employees", spouse: "Spouses & partners", retiree: "Retirees" }[t]}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <FieldShell id="eligDepartments" label="Departments" optional hint="One per line or comma-separated. Matched against the department members enter in their profile (case doesn't matter).">
+            <textarea id="eligDepartments" name="eligDepartments" defaultValue={initial.eligDepartments} rows={2} aria-describedby="eligDepartments-hint" className={cn(control, "py-2.5")} />
+          </FieldShell>
+        </Card>
+
+        <Card className="space-y-4 p-5">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Milestones</h2>
+            <p className="text-xs text-ink-muted">
+              Bonus points along the way, in {scoreUnit}. Each pays once per member, even if you edit it later.
+            </p>
+          </div>
+          {milestones.length > 0 && (
+            <ul className="space-y-2">
+              {milestones.map((m, i) => (
+                <li key={m.key} className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 sm:grid-cols-[1fr_110px_90px_auto]">
+                  <input name="milestoneLabel" defaultValue={m.label} placeholder="e.g. Halfway there" aria-label={`Milestone ${i + 1} name`} maxLength={200} className={cn(control, "col-span-3 h-10 sm:col-span-1")} />
+                  <input name="milestoneThreshold" defaultValue={m.threshold} type="number" min={0} step="any" inputMode="decimal" placeholder={scoreUnit} aria-label={`Milestone ${i + 1} amount in ${scoreUnit}`} aria-invalid={fe.milestones ? true : undefined} aria-describedby={fe.milestones ? "milestones-error" : undefined} className={cn(control, "h-10")} />
+                  <input name="milestonePoints" defaultValue={m.points} type="number" min={0} inputMode="numeric" placeholder="pts" aria-label={`Milestone ${i + 1} points`} className={cn(control, "h-10")} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMilestones((ms) => ms.filter((x) => x.key !== m.key));
+                      // The row (and this button) disappears: keep focus in the section.
+                      requestAnimationFrame(() => addMilestoneRef.current?.focus());
+                    }}
+                    className="grid size-9 place-items-center rounded-full text-ink-subtle hover:bg-surface-muted hover:text-accent"
+                    aria-label={`Remove milestone ${i + 1}`}
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {fe.milestones && (
+            <p id="milestones-error" className="text-xs font-medium text-accent">
+              {fe.milestones}
+            </p>
+          )}
+          {milestones.length < 10 && (
+            <button
+              ref={addMilestoneRef}
+              type="button"
+              onClick={() => {
+                setMilestones((ms) => [...ms, { label: "", threshold: "", points: "25", key: nextKey }]);
+                setNextKey((k) => k + 1);
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            >
+              <Plus className="size-4" aria-hidden /> Add milestone
+            </button>
+          )}
+        </Card>
+      </div>
+
+      <div className="space-y-6">
+        <Card className="space-y-4 p-5">
+          <fieldset>
+            <legend className="text-sm font-semibold text-ink">Status</legend>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(["draft", "published"] as const).map((s) => (
+                <label key={s} className="cursor-pointer">
+                  <input type="radio" name="status" value={s} checked={published === (s === "published")} onChange={() => setPublished(s === "published")} className="peer sr-only" />
+                  <span className="block rounded-xl border border-input-border px-3 py-2 text-center text-sm font-semibold text-ink-muted peer-checked:border-primary peer-checked:ring-1 peer-checked:ring-primary peer-checked:bg-primary-soft peer-checked:text-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                    {s === "draft" ? "Draft" : "Published"}
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">{published ? "Members can see and join it." : "Only admins can see drafts."}</p>
+          </fieldset>
+          <div className="grid grid-cols-2 gap-3">
+            <FieldShell id="startDate" label="Starts" error={fe.startDate}>
+              <input {...field("startDate")} type="date" className={cn(control, "h-11")} />
+            </FieldShell>
+            <FieldShell id="endDate" label="Ends" error={fe.endDate}>
+              <input {...field("endDate")} type="date" className={cn(control, "h-11")} />
+            </FieldShell>
+          </div>
+          <FieldShell id="pointsOnCompletion" label="Points" error={fe.pointsOnCompletion} hint={type === "leaderboard" || type === "group_goal" ? "For everyone who takes part, when you finish it." : "For reaching the goal."}>
+            <input {...field("pointsOnCompletion")} type="number" min={0} inputMode="numeric" className={cn(control, "h-11")} />
+          </FieldShell>
+          {enrollments > 0 && (
+            <p className="rounded-xl bg-warning-soft px-3 py-2 text-xs font-medium text-warning">
+              {enrollments} member{enrollments === 1 ? " has" : "s have"} joined. Changing what counts, the dates or the cap recalculates their progress.
+            </p>
+          )}
+          <FormError message={state.error} />
+          <div className="flex gap-2">
+            <Button type="submit" disabled={pending || removing} className="flex-1">
+              {pending ? "Saving…" : challengeId ? "Save changes" : "Create challenge"}
+            </Button>
+            <Link href="/admin/challenges" className={buttonClasses({ variant: "ghost" })}>
+              Cancel
+            </Link>
+          </div>
+        </Card>
+
+        {challengeId && (
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold text-ink">{enrollments ? "Archive" : "Delete"}</h2>
+            <p className="mt-1 text-xs text-ink-muted">
+              {enrollments ? "Hides it from members. Progress and earned points are kept." : "Nobody has joined, so it can be deleted for good."}
+            </p>
+            <button
+              type="button"
+              disabled={removing || pending}
+              onClick={() => {
+                if (confirm(enrollments ? `Archive “${initial.name}”?` : `Delete “${initial.name}”? This can't be undone.`)) startRemove(() => removeChallenge(challengeId));
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold text-accent hover:bg-accent-soft disabled:opacity-50"
+            >
+              {enrollments ? <Archive className="size-4" aria-hidden /> : <Trash2 className="size-4" aria-hidden />}
+              {removing ? "Working…" : enrollments ? "Archive challenge" : "Delete challenge"}
+            </button>
+          </Card>
+        )}
+      </div>
+    </form>
+  );
+}
