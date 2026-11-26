@@ -39,7 +39,7 @@ export default async function ConnectStepsPage() {
         {/* eslint-disable-next-line @next/next/no-img-element -- inline SVG data URI */}
         <img src={qr} alt="QR code that opens this page on your phone" width={120} height={120} className="shrink-0 rounded-xl border border-border" />
         <p className="text-sm text-ink">
-          <strong>On a computer?</strong> Point your iPhone camera at this code to open this page there, then sign in if asked.
+          <strong>On a computer?</strong>{" "}Point your iPhone camera at this code to open this page there, then sign in if asked.
         </p>
       </Card>
 

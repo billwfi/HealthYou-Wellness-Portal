@@ -388,6 +388,7 @@ model DeviceConnection {
 
   @@unique([userId, provider])
   @@index([tokenHash])
+  @@index([externalUserId])
   @@map("device_connections")
 }
 
