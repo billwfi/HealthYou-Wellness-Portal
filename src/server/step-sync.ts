@@ -63,50 +63,61 @@ export async function syncSteps(key: string, input: { steps: unknown; date?: unk
   });
   if (!claimed.count) return fail(429, "Synced a moment ago. Try again in a minute.");
 
+  const label = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(day);
+  const final = await recordSyncedSteps(connection.userId, day, steps, "Apple Health");
+  await db.deviceConnection.update({ where: { id: connection.id }, data: { lastValue: steps, lastDay: day, lastError: null } });
+  const note = final > steps ? ` Your other device reported more (${final.toLocaleString()}), so that total counts.` : "";
+  return { status: 200, body: { ok: true, message: `Synced ${steps.toLocaleString()} steps for ${label}.${note}`, steps, date: iso } };
+}
+
+/**
+ * Store one day's synced step total from a device source. A member has at most
+ * one synced steps entry per day: it replaces anything typed in, and when two
+ * devices report (say a phone and a watch) the higher total counts. A newer
+ * reading from the same source replaces that source's earlier one.
+ * Returns the total that now counts for the day.
+ */
+export async function recordSyncedSteps(userId: string, day: Date, steps: number, sourceLabel: string) {
   const type = await db.activityType.findFirst({ where: { metric: "steps", isActive: true }, orderBy: { id: "asc" } });
-  if (!type) return fail(503, "Step tracking isn't set up in the program yet.");
+  if (!type) throw new Error("No active steps activity type");
+  const iso = day.toISOString().slice(0, 10);
+  const note = `Synced from ${sourceLabel}`;
 
-  const userId = connection.userId;
-  const externalId = `${SHORTCUT_PROVIDER}:${iso}`;
-  const replaced = await db.activityEntry.findMany({
-    where: {
-      userId,
-      entryDate: day,
-      activityType: { metric: "steps" },
-      OR: [{ source: "manual" }, { source: "device", externalId }],
-    },
-    select: { id: true },
+  const existing = await db.activityEntry.findMany({
+    where: { userId, entryDate: day, activityType: { metric: "steps" }, source: { in: ["manual", "device"] } },
+    select: { id: true, source: true, value: true, notes: true },
   });
-  const replacedIds = replaced.map((e) => String(e.id));
+  const others = existing.filter((e) => e.source === "device" && e.notes !== note).map((e) => Number(e.value.toString()));
+  const otherBest = others.length ? Math.max(...others) : 0;
+  const final = Math.max(steps, otherBest);
+  const finalNote = final === steps ? note : (existing.find((e) => e.source === "device" && Number(e.value.toString()) === otherBest)?.notes ?? note);
 
+  const ids = existing.map((e) => e.id);
   const entry = await db.$transaction(async (tx) => {
-    if (replacedIds.length) {
-      await tx.pointsLedger.deleteMany({ where: { userId, sourceType: "activity", sourceId: { in: replacedIds } } });
-      await tx.activityEntry.deleteMany({ where: { id: { in: replaced.map((e) => e.id) } } });
+    if (ids.length) {
+      await tx.pointsLedger.deleteMany({ where: { userId, sourceType: "activity", sourceId: { in: ids.map(String) } } });
+      await tx.activityEntry.deleteMany({ where: { id: { in: ids } } });
     }
-    if (steps === 0) return null;
+    if (final === 0) return null;
     return tx.activityEntry.create({
-      data: { userId, activityTypeId: type.id, entryDate: day, value: steps, source: "device", externalId, notes: "Synced from Apple Health" },
+      data: { userId, activityTypeId: type.id, entryDate: day, value: final, source: "device", externalId: `steps:${iso}`, notes: finalNote },
     });
   });
 
   if (entry) {
-    const points = Math.floor(steps * Number(type.pointsPerUnit.toString()));
+    const points = Math.floor(final * Number(type.pointsPerUnit.toString()));
     if (points > 0) {
       await awardPoints({
         userId,
         ruleSlug: "physical-activity",
         sourceType: "activity",
         sourceId: String(entry.id),
-        description: `${type.name}: ${steps.toLocaleString()} ${type.unit} (synced)`,
+        description: `${type.name}: ${final.toLocaleString()} ${type.unit} (synced)`,
         on: day,
         points,
       });
     }
   }
   await recomputeProgress(userId, day, day);
-  await db.deviceConnection.update({ where: { id: connection.id }, data: { lastValue: steps, lastDay: day, lastError: null } });
-
-  const label = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" }).format(day);
-  return { status: 200, body: { ok: true, message: `Synced ${steps.toLocaleString()} steps for ${label}.`, steps, date: iso } };
+  return final;
 }

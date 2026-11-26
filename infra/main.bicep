@@ -46,6 +46,17 @@ param vapidPublicKey string = ''
 @description('Web Push private key (VAPID), stored in Key Vault.')
 param vapidPrivateKey string = ''
 
+@description('Terra developer ID; empty runs device connections in demo mode.')
+param terraDevId string = ''
+
+@secure()
+@description('Terra API key, stored in Key Vault.')
+param terraApiKey string = ''
+
+@secure()
+@description('Terra webhook signing secret, stored in Key Vault.')
+param terraWebhookSecret string = ''
+
 @description('When the evening reminders run (cron, UTC). 01:00 UTC is 6 pm MST / 7 pm MDT.')
 param reminderCron string = '0 1 * * *'
 
@@ -144,6 +155,20 @@ resource vapidSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (pushEn
   properties: { value: vapidPrivateKey }
 }
 
+var terraEnabled = !empty(terraDevId) && !empty(terraApiKey) && !empty(terraWebhookSecret)
+
+resource terraKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (terraEnabled) {
+  parent: kv
+  name: 'terra-api-key'
+  properties: { value: terraApiKey }
+}
+
+resource terraWebhookKvSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (terraEnabled) {
+  parent: kv
+  name: 'terra-webhook-secret'
+  properties: { value: terraWebhookSecret }
+}
+
 // ── Network: fixed outbound IP via NAT gateway ─────────────────────────────────
 // All outbound traffic from the apps leaves through one static public IP, so the
 // SQL Server firewall can allow exactly that address.
@@ -220,7 +245,17 @@ var secrets = concat([
   { name: 'better-auth-secret', keyVaultUrl: authSecret.properties.secretUri, identity: identity.id }
 ], pushEnabled ? [
   { name: 'vapid-private-key', keyVaultUrl: vapidSecret!.properties.secretUri, identity: identity.id }
+] : [], terraEnabled ? [
+  { name: 'terra-api-key', keyVaultUrl: terraKeySecret!.properties.secretUri, identity: identity.id }
+  { name: 'terra-webhook-secret', keyVaultUrl: terraWebhookKvSecret!.properties.secretUri, identity: identity.id }
 ] : [])
+
+// Terra device connections (web app only). Without them the app runs a labeled demo.
+var terraEnv = terraEnabled ? [
+  { name: 'TERRA_DEV_ID', value: terraDevId }
+  { name: 'TERRA_API_KEY', secretRef: 'terra-api-key' }
+  { name: 'TERRA_WEBHOOK_SECRET', secretRef: 'terra-webhook-secret' }
+] : []
 
 // Web Push settings, shared by the web app and the reminder job.
 var pushEnv = pushEnabled ? [
@@ -270,7 +305,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = if (deployApp) {
           name: 'web'
           image: '${acr.properties.loginServer}/${webImage}'
           resources: { cpu: json('0.5'), memory: '1Gi' }
-          env: concat(dbEnv, pushEnv, [
+          env: concat(dbEnv, pushEnv, terraEnv, [
             { name: 'BETTER_AUTH_SECRET', secretRef: 'better-auth-secret' }
             { name: 'BETTER_AUTH_URL', value: appUrl }
           ])

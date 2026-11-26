@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Target } from "lucide-react";
 import { db } from "@/db";
 import { requireUser } from "@/lib/session";
@@ -17,15 +16,12 @@ import { vapidPublicKey } from "@/server/push";
 import { StepSyncSettings } from "@/components/devices/step-sync-settings";
 import { SHORTCUT_PROVIDER } from "@/server/step-sync";
 import { PROGRAM_TIME_ZONE } from "@/lib/dates";
+import { qrDataUri, siteOrigin } from "@/server/qr";
+import { SETUP_PATH } from "@/lib/step-sync";
+import { DeviceConnections } from "@/components/devices/device-connections";
+import { terraMode } from "@/server/terra";
 
 export const metadata: Metadata = { title: "Profile" };
-
-async function syncUrl() {
-  const base = process.env.BETTER_AUTH_URL?.replace(/\/$/, "");
-  if (base) return `${base}/api/sync/steps`;
-  const h = await headers();
-  return `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}/api/sync/steps`;
-}
 
 function lastSyncLabel(c: { lastSyncedAt: Date | null; lastValue: number | null; lastDay: Date | null } | null) {
   if (!c?.lastSyncedAt || c.lastValue == null || !c.lastDay) return null;
@@ -46,12 +42,14 @@ const editLink = (what: string) => (
   </ButtonLink>
 );
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ device?: string }> }) {
   const user = await requireUser();
-  const [member, habits, stepSync] = await Promise.all([
+  const { device } = await searchParams;
+  const [member, habits, stepSync, devices] = await Promise.all([
     getMemberContext(user.id),
     db.userHabit.findMany({ where: { userId: user.id, active: true }, include: { habit: true }, orderBy: { startedAt: "asc" } }),
     db.deviceConnection.findUnique({ where: { userId_provider: { userId: user.id, provider: SHORTCUT_PROVIDER } } }),
+    db.deviceConnection.findMany({ where: { userId: user.id, provider: { startsWith: "terra:" } }, orderBy: { createdAt: "asc" } }),
   ]);
   const memberType = member.profile?.memberType as MemberType | undefined;
 
@@ -137,10 +135,17 @@ export default async function ProfilePage() {
             </CardBody>
           </Card>
 
-          <Card id="steps" className="scroll-mt-24">
-            <CardHeader title="Step sync" description="Fitbit, Garmin and Android are coming later" />
+          <Card id="devices" className="scroll-mt-24">
+            <CardHeader title="Connected devices" description="Steps sync automatically for challenges and points" />
             <CardBody>
-              <StepSyncSettings syncUrl={await syncUrl()} connected={Boolean(stepSync)} lastSync={lastSyncLabel(stepSync)} />
+              <DeviceConnections connections={devices} demo={terraMode() === "demo"} notice={device} />
+            </CardBody>
+          </Card>
+
+          <Card id="steps" className="scroll-mt-24">
+            <CardHeader title="iPhone step sync with a Shortcut" description="A no-app alternative for iPhone" />
+            <CardBody>
+              <StepSyncSettings connected={Boolean(stepSync)} lastSync={lastSyncLabel(stepSync)} qr={await qrDataUri(`${await siteOrigin()}${SETUP_PATH}`)} />
             </CardBody>
           </Card>
         </div>

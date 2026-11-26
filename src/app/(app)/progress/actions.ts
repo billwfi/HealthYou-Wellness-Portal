@@ -49,7 +49,7 @@ export async function logActivity(_prev: LogState, formData: FormData): Promise<
       where: { userId: user.id, entryDate: day, source: "device", activityType: { metric: "steps" } },
       select: { id: true },
     });
-    if (synced) return { error: "Steps for that day come from your iPhone sync, so they can't be typed in too.", ok: null };
+    if (synced) return { error: "Steps for that day come from your synced device, so they can't be typed in too.", ok: null };
   }
 
   // The limit covers the whole day, not each entry, so it can't be beaten by splitting.

@@ -43,7 +43,7 @@ export default async function ProgressPage() {
     getHabitCalendar(user.id),
     getBiometricHistory(user.id),
   ]);
-  const stepSync = await db.deviceConnection.findFirst({ where: { userId: user.id, provider: "apple_health", status: "connected" }, select: { id: true } });
+  const stepSync = await db.deviceConnection.findFirst({ where: { userId: user.id, status: "connected" }, select: { id: true } });
   const pointsFor = new Map(points.map((p) => [p.sourceId, p.points]));
 
   const week = { steps: 0, minutes: 0, workouts: 0, servings: 0 };
@@ -101,12 +101,12 @@ export default async function ProgressPage() {
             <p className="mt-4 border-t border-border pt-4 text-sm text-ink-muted">
               You can type in up to {MANUAL_DAILY_LIMIT.steps.toLocaleString()} steps a day.{" "}
               {stepSync ? (
-                <>Your iPhone sends your steps automatically.</>
+                <>Your connected device sends your steps automatically.</>
               ) : (
                 <>
-                  On iPhone?{" "}
-                  <Link href="/profile#steps" className="font-semibold text-primary hover:underline">
-                    Sync your steps from Apple Health
+                  Have a phone or watch?{" "}
+                  <Link href="/profile#devices" className="font-semibold text-primary hover:underline">
+                    Connect it to sync your steps
                   </Link>
                   .
                 </>
@@ -134,7 +134,7 @@ export default async function ProgressPage() {
                               · {Number(e.value.toString()).toLocaleString()} {e.activityType.unit}
                             </span>
                             {e.source === "device" ? (
-                              <span className="block text-xs text-ink-subtle">Synced from Apple Health</span>
+                              <span className="block text-xs text-ink-subtle">{e.notes ?? "Synced from a device"}</span>
                             ) : (
                               e.notes && <span className="block truncate text-xs text-ink-subtle">{e.notes}</span>
                             )}

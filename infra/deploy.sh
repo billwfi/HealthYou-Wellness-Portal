@@ -9,7 +9,7 @@
 #   infra/deploy.sh egress     # print the outbound IP the jobs/apps use
 #   infra/deploy.sh reminders  # send tonight's reminders now (normally a nightly scheduled job)
 #
-# Reads DB_*, PROD_BETTER_AUTH_SECRET and PROD_VAPID_* from .env.local (never committed).
+# Reads DB_*, PROD_BETTER_AUTH_SECRET, PROD_VAPID_* and TERRA_* from .env.local (never committed).
 # Override defaults with env vars: SUBSCRIPTION, RG, LOCATION, APP_NAME.
 set -euo pipefail
 export PYTHONIOENCODING=utf-8 PYTHONUTF8=1   # az CLI on Windows crashes printing build logs otherwise
@@ -97,6 +97,7 @@ params=(
   dbPassword="$DB_PASSWORD" dbTrustServerCertificate="${DB_TRUST_SERVER_CERTIFICATE:-false}"
   betterAuthSecret="$PROD_BETTER_AUTH_SECRET"
   vapidPublicKey="${PROD_VAPID_PUBLIC_KEY:-}" vapidPrivateKey="${PROD_VAPID_PRIVATE_KEY:-}"
+  terraDevId="${TERRA_DEV_ID:-}" terraApiKey="${TERRA_API_KEY:-}" terraWebhookSecret="${TERRA_WEBHOOK_SECRET:-}"
 )
 
 echo "▶ Resource group $RG ($LOCATION)"
