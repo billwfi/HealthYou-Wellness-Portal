@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Build and deploy Reach Your Peak to Azure Container Apps.
 #
-#   infra/deploy.sh            # infra + images + app (idempotent; safe to rerun)
+#   infra/deploy.sh            # infra + images + migrations + app (idempotent; safe to rerun)
+#                              # SKIP_MIGRATE=1 infra/deploy.sh skips the migration step
 #   infra/deploy.sh migrate    # run `prisma migrate deploy` as a Container Apps job
 #   infra/deploy.sh seed       # run the reference-data seed as a job
 #   infra/deploy.sh admin [you@example.com] # grant admin role (no email = the only account)
@@ -25,15 +26,16 @@ set -a; . ./.env.local; set +a
 azs() { az "$@" --subscription "$SUBSCRIPTION" --only-show-errors; }
 JOB="job-${APP_NAME}-migrate"
 
-run_job() { # $1 = shell command to run in the tools image
+run_job() { # $1 = shell command to run in the tools image; $2 = optional image to use instead of the job's
   echo "▶ Starting job: $1"
   local exec container body status
   # Start via REST: `az containerapp job start --args` misparses values like "-c".
   # The override replaces the whole container, so carry over its image, env and resources.
   container=$(azs containerapp job show -g "$RG" -n "$JOB" --query "properties.template.containers[0]" -o json)
-  body=$(CONTAINER="$container" CMD="$1" node -e '
+  body=$(CONTAINER="$container" CMD="$1" IMAGE="${2:-}" node -e '
     const c = JSON.parse(process.env.CONTAINER);
-    const { name, image, env, resources } = c;
+    const { name, env, resources } = c;
+    const image = process.env.IMAGE || c.image;
     console.log(JSON.stringify({ containers: [{ name, image, env, resources, command: ["/bin/sh", "-c", process.env.CMD] }] }));')
   exec=$(MSYS_NO_PATHCONV=1 az rest --method post --only-show-errors \
     --url "https://management.azure.com/subscriptions/$SUBSCRIPTION/resourceGroups/$RG/providers/Microsoft.App/jobs/$JOB/start?api-version=2024-03-01" \
@@ -109,7 +111,23 @@ echo "▶ Building images in $ACR (tag $TAG)"
 build_image "web:$TAG" runner
 build_image "tools:$TAG" tools
 
-echo "▶ Container app + migration job"
+# Migrate before the new app version goes live, using the new image's migrations.
+# If a migration fails, the script stops here and the current version keeps serving.
+# The first deploy has no migration job yet, so it migrates after creating it.
+MIGRATED=false
+if [ "${SKIP_MIGRATE:-}" = "1" ]; then
+  echo "▶ Skipping migrations (SKIP_MIGRATE=1)"
+  MIGRATED=true
+elif azs containerapp job show -g "$RG" -n "$JOB" --query name -o tsv >/dev/null 2>&1; then
+  run_job "npx prisma migrate deploy" "$(azs acr show -n "$ACR" --query loginServer -o tsv)/tools:$TAG"
+  MIGRATED=true
+fi
+
+echo "▶ Container app + jobs"
 azs deployment group create -g "$RG" -n app -f infra/main.bicep \
   --parameters "${params[@]}" deployApp=true webImage="web:$TAG" toolsImage="tools:$TAG" \
   --query "properties.outputs.{url:appUrl.value, outboundIp:outboundIp.value}" -o json
+
+if [ "$MIGRATED" = false ]; then
+  run_job "npx prisma migrate deploy"
+fi
